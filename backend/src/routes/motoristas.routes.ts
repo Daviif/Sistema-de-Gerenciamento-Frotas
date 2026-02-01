@@ -10,6 +10,11 @@ import {
 
 const router = Router()
 
+const limparString = (valor: any): string => {
+  if (typeof valor !== 'string') return '';
+  return valor.replace(/[^\d]/g, '');
+}
+
 // ✅ GET /motoristas - Listar todos os motoristas
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { status } = req.query
@@ -28,13 +33,19 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   res.json(result.rows)
 }))
 
-// ✅ GET /motoristas/:id - Buscar motorista por ID
-router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
+// ✅ GET /motoristas/:cpf - Buscar motorista por CPF
+router.get('/:cpf', asyncHandler(async (req: Request, res: Response) => {
+  const { cpf } = req.params
+
+  const cpfLimpo = limparString(cpf)
+
+  if (!validarCPF(cpfLimpo)) {
+    throw new AppError('CPF inválido', 400)
+  }
   
   const result = await pool.query(
-    'SELECT * FROM motorista WHERE id_motorista = $1',
-    [id]
+    'SELECT * FROM motorista WHERE cpf = $1',
+    [cpfLimpo]
   )
   
   if (result.rowCount === 0) {
@@ -82,7 +93,7 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
 
   // Verificar se CPF já existe
   const cpfExiste = await pool.query(
-    'SELECT id_motorista FROM motorista WHERE cpf = $1',
+    'SELECT cpf FROM motorista WHERE cpf = $1',
     [cpf.replace(/[^\d]/g, '')]
   )
 
@@ -92,7 +103,7 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
 
   // Verificar se CNH já existe
   const cnhExiste = await pool.query(
-    'SELECT id_motorista FROM motorista WHERE cnh = $1',
+    'SELECT cpf FROM motorista WHERE cnh = $1',
     [cnh.replace(/[^\d]/g, '')]
   )
 
@@ -117,13 +128,19 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(rows[0])
 }))
 
-// ✅ PUT /motoristas/:id - Atualizar motorista
-router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
+// ✅ PUT /motoristas/:cpf - Atualizar motorista
+router.put('/:cpf', asyncHandler(async (req: Request, res: Response) => {
+  const { cpf: cpfParam } = req.params;
+  const cpfLimpo = limparString(cpfParam);
+
+  if (!validarCPF(cpfLimpo)) {
+    throw new AppError('CPF inválido', 400)
+  }
+
   const {
     nome,
-    cpf,
     cnh,
+    cpf,
     cat_cnh,
     validade_cnh,
     status
@@ -131,8 +148,8 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
 
   // Verificar se motorista existe
   const motoristaExiste = await pool.query(
-    'SELECT * FROM motorista WHERE id_motorista = $1',
-    [id]
+    'SELECT * FROM motorista WHERE cpf = $1',
+    [cpfLimpo]
   )
 
   if (motoristaExiste.rowCount === 0) {
@@ -142,9 +159,6 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
   const motoristaAtual = motoristaExiste.rows[0]
 
   // Validações
-  if (cpf && !validarCPF(cpf)) {
-    throw new AppError('CPF inválido')
-  }
 
   if (cnh && !validarCNH(cnh)) {
     throw new AppError('CNH inválida')
@@ -163,7 +177,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
     const cpfLimpo = cpf.replace(/[^\d]/g, '')
     if (cpfLimpo !== motoristaAtual.cpf) {
       const cpfExiste = await pool.query(
-        'SELECT id_motorista FROM motorista WHERE cpf = $1',
+        'SELECT cpf FROM motorista WHERE cpf = $1',
         [cpfLimpo]
       )
 
@@ -178,7 +192,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
     const cnhLimpa = cnh.replace(/[^\d]/g, '')
     if (cnhLimpa !== motoristaAtual.cnh) {
       const cnhExiste = await pool.query(
-        'SELECT id_motorista FROM motorista WHERE cnh = $1',
+        'SELECT cpf FROM motorista WHERE cnh = $1',
         [cnhLimpa]
       )
 
@@ -197,30 +211,30 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
        cat_cnh = COALESCE($4, cat_cnh),
        validade_cnh = COALESCE($5, validade_cnh),
        status = COALESCE($6, status)
-     WHERE id_motorista = $7
+     WHERE cpf = $7
      RETURNING *`,
     [
       nome,
-      cpf?.replace(/[^\d]/g, ''),
-      cnh?.replace(/[^\d]/g, ''),
+      cpf ? limparString(cpf) : null,
+      cnh ? limparString(cnh) : null,
       cat_cnh?.toUpperCase(),
       validade_cnh,
       status,
-      id
+      cpfLimpo
     ]
   )
 
   res.json(rows[0])
 }))
 
-// ✅ DELETE /motoristas/:id - Deletar motorista
-router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
+// ✅ DELETE /motoristas/:cpf - Deletar motorista
+router.delete('/:cpf', asyncHandler(async (req: Request, res: Response) => {
+  const { cpf } = req.params
 
   // Verificar se motorista existe
   const motoristaExiste = await pool.query(
-    'SELECT * FROM motorista WHERE id_motorista = $1',
-    [id]
+    'SELECT * FROM motorista WHERE cpf = $1',
+    [cpf]
   )
 
   if (motoristaExiste.rowCount === 0) {
@@ -230,8 +244,8 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
   // Verificar se motorista está em viagem
   const emViagem = await pool.query(
     `SELECT id_viagem FROM viagem 
-     WHERE id_motorista = $1 AND status_viagem = 'em_andamento'`,
-    [id]
+     WHERE cpf_motorista = $1 AND status_viagem = 'em_andamento'`,
+    [cpf]
   )
 
   if (emViagem.rowCount! > 0) {
@@ -240,15 +254,15 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
 
   // Verificar se tem histórico de viagens
   const temHistorico = await pool.query(
-    'SELECT id_viagem FROM viagem WHERE id_motorista = $1 LIMIT 1',
-    [id]
+    'SELECT id_viagem FROM viagem WHERE cpf_motorista = $1 LIMIT 1',
+    [cpf]
   )
 
   if (temHistorico.rowCount! > 0) {
     // Se tem histórico, apenas inativa
     const { rows } = await pool.query(
-      `UPDATE motorista SET status = 'inativo' WHERE id_motorista = $1 RETURNING *`,
-      [id]
+      `UPDATE motorista SET status = 'inativo' WHERE cpf = $1 RETURNING *`,
+      [cpf]
     )
     return res.json({
       message: 'Motorista inativado (possui histórico de viagens)',
@@ -257,18 +271,18 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Se não tem histórico, pode deletar
-  await pool.query('DELETE FROM motorista WHERE id_motorista = $1', [id])
+  await pool.query('DELETE FROM motorista WHERE cpf = $1', [cpf])
   
   res.json({ message: 'Motorista excluído com sucesso' })
 }))
 
-// ✅ GET /motoristas/:id/historico - Histórico do motorista
-router.get('/:id/historico', asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
+// ✅ GET /motoristas/:cpf/historico - Histórico do motorista
+router.get('/:cpf/historico', asyncHandler(async (req: Request, res: Response) => {
+  const { cpf } = req.params
 
   const motorista = await pool.query(
-    'SELECT * FROM motorista WHERE id_motorista = $1',
-    [id]
+    'SELECT * FROM motorista WHERE cpf = $1',
+    [cpf]
   )
 
   if (motorista.rowCount === 0) {
@@ -287,9 +301,9 @@ router.get('/:id/historico', asyncHandler(async (req: Request, res: Response) =>
      JOIN veiculo ve ON ve.id_veiculo = v.id_veiculo
      JOIN cidade c1 ON c1.id_cidade = v.cidade_origem
      JOIN cidade c2 ON c2.id_cidade = v.cidade_destino
-     WHERE v.id_motorista = $1
+     WHERE v.cpf_motorista = $1
      ORDER BY v.data_saida DESC`,
-    [id]
+    [cpf]
   )
 
   // Calcular estatísticas
@@ -317,7 +331,7 @@ router.get('/disponiveis/lista', asyncHandler(async (req: Request, res: Response
        AND m.validade_cnh > CURRENT_DATE
        AND NOT EXISTS (
          SELECT 1 FROM viagem v
-         WHERE v.id_motorista = m.id_motorista
+         WHERE v.cpf_motorista = m.cpf
            AND v.status_viagem = 'em_andamento'
        )
      ORDER BY m.nome`

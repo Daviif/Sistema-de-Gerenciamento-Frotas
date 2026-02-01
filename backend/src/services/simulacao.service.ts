@@ -42,7 +42,7 @@ export async function finalizarViagem(idViagem: number) {
       SELECT 
         id_viagem,
         id_veiculo,
-        id_motorista
+        cpf_motorista
         km_inicial,
         status_viagem,
         data_saida
@@ -83,9 +83,9 @@ export async function finalizarViagem(idViagem: number) {
       `
       UPDATE motorista
       SET status = $1
-      WHERE id_motorista = $2
+      WHERE cpf_motorista = $2
       `,
-      [STATUS_MOTORISTA.ATIVO, viagem.id_motorista]
+      [STATUS_MOTORISTA.ATIVO, viagem.cpf_motorista]
     )
 
     const viagemAtualizada = await client.query(
@@ -127,7 +127,7 @@ export async function cancelarViagem(idViagem: number, motivo?: string) {
       `SELECT 
         id_viagem,
         id_veiculo,
-        id_motorista,
+        cpf_motorista,
         status_viagem
       FROM viagem
       WHERE id_viagem = $1
@@ -161,8 +161,8 @@ export async function cancelarViagem(idViagem: number, motivo?: string) {
     await client.query(
       `UPDATE motorista
        SET status = $1
-       WHERE id_motorista = $2`,
-      [STATUS_MOTORISTA.ATIVO, viagem.id_motorista]
+       WHERE cpf_motorista = $2`,
+      [STATUS_MOTORISTA.ATIVO, viagem.cpf_motorista]
     )
 
     // Cancelar viagem
@@ -189,7 +189,7 @@ export async function cancelarViagem(idViagem: number, motivo?: string) {
 }
 
 export async function simularViagem(idVeiculo: number, params?: {
-  idMotorista?: number
+  cpfMotorista?: string
   cidadeOrigem?: number
   cidadeDestino?: number
 }) {
@@ -265,18 +265,18 @@ export async function simularViagem(idVeiculo: number, params?: {
     }
 
     // 3️⃣ Selecionar motorista
-    let idMotorista = params?.idMotorista
+    let cpfMotorista = params?.cpfMotorista
 
-    if (!idMotorista) {
+    if (!cpfMotorista) {
       const motoristaRes = await client.query(
-        `SELECT m.id_motorista, m.nome
+        `SELECT m.cpf, m.nome
          FROM motorista m
          WHERE m.status = '${STATUS_MOTORISTA.ATIVO}'
            AND m.validade_cnh > CURRENT_DATE
            AND NOT EXISTS (
              SELECT 1
              FROM viagem v
-             WHERE v.id_motorista = m.id_motorista
+             WHERE v.cpf_motorista = m.cpf
                AND v.status_viagem = '${STATUS_VIAGEM.EM_ANDAMENTO}'
            )
          ORDER BY RANDOM()
@@ -287,22 +287,22 @@ export async function simularViagem(idVeiculo: number, params?: {
         throw new AppError('Nenhum motorista disponível (todos em viagem ou inativos)', 400)
       }
 
-      idMotorista = motoristaRes.rows[0].id_motorista
+      cpfMotorista = motoristaRes.rows[0].cpf
     } else {
       // Validar motorista específico
       const motoristaValido = await client.query(
-        `SELECT m.id_motorista
+        `SELECT m.cpf
          FROM motorista m
-         WHERE m.id_motorista = $1
+         WHERE m.cpf = $1
            AND m.status = '${STATUS_MOTORISTA.ATIVO}'
            AND m.validade_cnh > CURRENT_DATE
            AND NOT EXISTS (
              SELECT 1
              FROM viagem v
-             WHERE v.id_motorista = m.id_motorista
+             WHERE v.cpf_motorista = m.cpf
                AND v.status_viagem = '${STATUS_VIAGEM.EM_ANDAMENTO}'
            )`,
-        [idMotorista]
+        [cpfMotorista]
       )
 
       if (motoristaValido.rowCount === 0) {
@@ -314,7 +314,7 @@ export async function simularViagem(idVeiculo: number, params?: {
     const viagemRes = await client.query(
       `INSERT INTO viagem (
          id_veiculo,
-         id_motorista,
+         cpf,
          cidade_origem,
          cidade_destino,
          data_saida,
@@ -325,7 +325,7 @@ export async function simularViagem(idVeiculo: number, params?: {
        RETURNING *`,
       [
         idVeiculo,
-        idMotorista,
+        cpfMotorista,
         cidadeOrigem,
         cidadeDestino,
         STATUS_VIAGEM.EM_ANDAMENTO,
@@ -345,8 +345,8 @@ export async function simularViagem(idVeiculo: number, params?: {
     await client.query(
       `UPDATE motorista
        SET status = $1
-       WHERE id_motorista = $2`,
-      [STATUS_MOTORISTA.EM_VIAGEM, idMotorista]
+       WHERE cpf_motorista = $2`,
+      [STATUS_MOTORISTA.EM_VIAGEM, cpfMotorista]
     )
 
     // 7️⃣ Buscar informações completas para retorno
@@ -362,7 +362,7 @@ export async function simularViagem(idVeiculo: number, params?: {
          c2.uf as destino_uf
        FROM viagem v
        JOIN veiculo ve ON ve.id_veiculo = v.id_veiculo
-       JOIN motorista m ON m.id_motorista = v.id_motorista
+       JOIN motorista m ON m.cpf = v.cpf_motorista
        JOIN cidade c1 ON c1.id_cidade = v.cidade_origem
        JOIN cidade c2 ON c2.id_cidade = v.cidade_destino
        WHERE v.id_viagem = $1`,
@@ -396,7 +396,7 @@ export async function buscarViagensEmAndamento() {
        EXTRACT(EPOCH FROM (NOW() - v.data_saida)) / 60 as minutos_em_viagem
      FROM viagem v
      JOIN veiculo ve ON ve.id_veiculo = v.id_veiculo
-     JOIN motorista m ON m.id_motorista = v.id_motorista
+     JOIN motorista m ON m.cpf = v.cpf_motorista
      JOIN cidade c1 ON c1.id_cidade = v.cidade_origem
      JOIN cidade c2 ON c2.id_cidade = v.cidade_destino
      WHERE v.status_viagem = $1
