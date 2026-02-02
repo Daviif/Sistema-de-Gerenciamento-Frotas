@@ -295,10 +295,10 @@ export const VEHICLE_STATUS_LABELS: Record<VehicleStatus, string> = {
 }
 
 export const VEHICLE_STATUS_COLORS: Record<VehicleStatus, string> = {
-  [VehicleStatus.ACTIVE]: 'bg-green-500',
-  [VehicleStatus.ON_TRIP]: 'bg-blue-500',
-  [VehicleStatus.MAINTENANCE]: 'bg-amber-500',
-  [VehicleStatus.INACTIVE]: 'bg-slate-500'
+  [VehicleStatus.ACTIVE]: 'status-success',
+  [VehicleStatus.ON_TRIP]: 'bg-primary/10 text-primary',
+  [VehicleStatus.MAINTENANCE]: 'status-warning',
+  [VehicleStatus.INACTIVE]: 'bg-muted text-muted-foreground'
 }
 
 export const TRIP_STATUS_LABELS: Record<TripStatus, string> = {
@@ -309,10 +309,10 @@ export const TRIP_STATUS_LABELS: Record<TripStatus, string> = {
 }
 
 export const TRIP_STATUS_COLORS: Record<TripStatus, string> = {
-  [TripStatus.PLANNED]: 'bg-slate-500',
-  [TripStatus.IN_PROGRESS]: 'bg-blue-500',
-  [TripStatus.COMPLETED]: 'bg-green-500',
-  [TripStatus.CANCELLED]: 'bg-red-500'
+  [TripStatus.PLANNED]: 'bg-muted text-muted-foreground',
+  [TripStatus.IN_PROGRESS]: 'bg-primary/10 text-primary',
+  [TripStatus.COMPLETED]: 'status-success',
+  [TripStatus.CANCELLED]: 'status-danger'
 }
 
 export const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {

@@ -2,22 +2,29 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
-  LayoutDashboard, 
+LayoutDashboard, 
   Truck, 
   Users, 
   MapPin, 
   Wrench,
-  Menu,
   X
 } from 'lucide-react'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { Button } from '@/components/ui/button'
+import Header from '@/components/layout/Header'
 import { cn } from '@/lib/utils'
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
-const navigation = [
+interface NavigationItem {
+  name: string
+  href: string
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+}
+
+const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Veículos', href: '/veiculos', icon: Truck },
   { name: 'Motoristas', href: '/motoristas', icon: Users },
@@ -30,17 +37,17 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       {/* Mobile sidebar */}
       <div className={cn(
         "fixed inset-0 z-50 lg:hidden",
         sidebarOpen ? "block" : "hidden"
       )}>
         <div 
-          className="fixed inset-0 bg-slate-900/50" 
+          className="fixed inset-0 overlay" 
           onClick={() => setSidebarOpen(false)} 
         />
-        <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl">
+        <div className="fixed inset-y-0 left-0 w-64 bg-card shadow-xl">
           <SidebarContent 
             navigation={navigation} 
             currentPath={location.pathname}
@@ -50,7 +57,7 @@ export default function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:z-40">
         <SidebarContent 
           navigation={navigation} 
           currentPath={location.pathname} 
@@ -60,29 +67,15 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
-
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div className="flex flex-1 items-center">
-              <h1 className="text-xl font-bold text-slate-900">
-                Gerenciador de Frota
-              </h1>
-            </div>
-          </div>
-        </div>
+        <Header onOpenSidebar={() => setSidebarOpen(true)} />
 
         {/* Page content */}
         <main className="py-8">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {children}
+            {/* Error boundary to avoid blank pages on render errors */}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </div>
         </main>
       </div>
@@ -95,17 +88,17 @@ function SidebarContent({
   currentPath,
   onClose 
 }: { 
-  navigation: typeof navigation
+  navigation: NavigationItem[]
   currentPath: string
   onClose?: () => void
 }) {
   return (
-    <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-slate-200 bg-white px-6 pb-4">
+    <div data-slot="site-sidebar" className="flex grow flex-col gap-y-5 overflow-y-auto bg-card px-6 pb-4 shadow-lg">
       {/* Logo */}
       <div className="flex h-16 shrink-0 items-center justify-between">
         <div className="flex items-center gap-2">
-          <Truck className="h-8 w-8 text-blue-600" />
-          <span className="text-xl font-bold text-slate-900">Frota</span>
+          <Truck className="h-8 w-8 text-primary" />
+          <span className="text-xl font-bold text-foreground">Frota</span>
         </div>
         {onClose && (
           <Button
@@ -133,14 +126,14 @@ function SidebarContent({
                       onClick={onClose}
                       className={cn(
                         isActive
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-slate-700 hover:text-blue-600 hover:bg-slate-50',
-                        'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:text-primary hover:bg-muted',
+                        'group flex gap-x-3 rounded-lg px-3 py-2 text-sm leading-6 font-semibold transition-colors'
                       )}
                     >
                       <item.icon
                         className={cn(
-                          isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600',
+                          isActive ? 'text-primary' : 'text-primary/70 group-hover:text-primary',
                           'h-6 w-6 shrink-0'
                         )}
                       />

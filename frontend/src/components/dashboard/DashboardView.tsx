@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { AlertTriangle, CheckCircle, Clock, AlertOctagon, Truck, Users, LucideIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStats } from '@/hooks/useStats'
+import Loading from '@/components/ui/loading'
 import { useDrivers } from '@/hooks/useMotorista'
 import { useVehicles } from '@/hooks/useVeiculos'
 import { Driver, Vehicle, VehicleStatus } from '@/types'
@@ -40,13 +41,17 @@ export default function DashboardView() {
   if (statsLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <Loading />
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Visão geral da frota</p>
+      </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard 
@@ -100,21 +105,21 @@ export default function DashboardView() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <AlertOctagon className="w-5 h-5 text-red-500 mr-2" />
+              <AlertOctagon className="w-5 h-5 text-danger mr-2" />
               Alertas Críticos
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {alerts.drivers.length > 0 && (
-                <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
-                  <p className="text-sm font-semibold text-red-800">
+                <div className="p-3 bg-danger-50 border border-danger rounded-lg">
+                  <p className="text-sm font-semibold text-danger">
                     Motoristas - Vencimento CNH
                   </p>
-                  <ul className="mt-1 text-sm text-red-600">
+                  <ul className="mt-1 text-sm text-danger">
                     {alerts.drivers.map(d => (
                       <li key={d.cpf}>
-                        • {d.nome} ({new Date(d.validade_cnh).toLocaleDateString('pt-BR')})
+                        • {d.nome} ({d.validade_cnh ? new Date(d.validade_cnh).toLocaleDateString('pt-BR') : '-'})
                       </li>
                     ))}
                   </ul>
@@ -122,14 +127,14 @@ export default function DashboardView() {
               )}
               
               {alerts.vehicles.length > 0 && (
-                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                  <p className="text-sm font-semibold text-amber-800">
+                <div className="p-3 status-warning rounded-lg">
+                  <p className="text-sm font-semibold" style={{ color: 'hsl(var(--warning))' }}>
                     Veículos - Alta Quilometragem
                   </p>
-                  <ul className="mt-1 text-sm text-amber-600">
+                  <ul className="mt-1 text-sm" style={{ color: 'hsl(var(--warning))' }}>
                     {alerts.vehicles.slice(0, 3).map(v => (
                       <li key={v.id_veiculo}>
-                        • {v.modelo} ({v.km_atual.toLocaleString('pt-BR')} km)
+                        • {v.modelo} {(v.km_atual !== undefined && v.km_atual !== null) ? `(${v.km_atual.toLocaleString('pt-BR')} km)` : '(-)'}
                       </li>
                     ))}
                   </ul>
@@ -137,7 +142,7 @@ export default function DashboardView() {
               )}
               
               {alerts.drivers.length === 0 && alerts.vehicles.length === 0 && (
-                <div className="text-center py-8 text-slate-400">
+                <div className="text-center py-8 text-muted-foreground">
                   <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
                   <p>Todos os sistemas normais</p>
                 </div>
@@ -184,21 +189,21 @@ function StatCard({
 }: StatCardProps) {
   
   const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    amber: 'bg-amber-50 text-amber-600',
-    red: 'bg-red-50 text-red-600',
+    blue: 'bg-primary/10 text-primary',
+    green: 'status-success',
+    amber: 'status-warning',
+    red: 'status-danger',
   }
 
   return (
     <Card>
       <CardContent className="p-6 flex items-center">
         <div className={`p-3 rounded-lg mr-4 ${colorClasses[color]}`}>
-          <Icon className="w-6 h-6" />
+          <Icon className="w-6 h-6 text-current" />
         </div>
         <div>
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <h4 className="text-2xl font-bold text-slate-900">{value}</h4>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <h4 className="text-2xl font-bold text-foreground">{value}</h4>
         </div>
       </CardContent>
     </Card>

@@ -4,6 +4,9 @@ import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import VeiculosForm from './VeiculosForm'
+import Loading from '@/components/ui/loading'
 import { useVehicles } from '@/hooks/useVeiculos'
 import { 
   Select,
@@ -12,24 +15,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { VehicleStatus } from '@/types'
+import { VehicleStatus, Vehicle } from '@/types'
 
 export default function VehiclesList() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   
   const { data: vehicles, isLoading } = useVehicles(statusFilter)
 
-  const filteredVehicles = vehicles?.filter(v => 
-    v.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.marca.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const q = searchTerm.toLowerCase()
+  function handleStatusChange(value: string) {
+    setStatusFilter(value === '__all__' ? '' : value)
+  }
+
+  const filteredVehicles = vehicles?.filter(v => {
+    const placa = (v.placa || '').toString().toLowerCase()
+    const modelo = (v.modelo || '').toString().toLowerCase()
+    const marca = (v.marca || '').toString().toLowerCase()
+    return (
+      placa.includes(q) ||
+      modelo.includes(q) ||
+      marca.includes(q)
+    )
+  })
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <Loading />
       </div>
     )
   }
@@ -39,35 +53,48 @@ export default function VehiclesList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Veículos</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-3xl font-bold text-foreground">Veículos</h1>
+          <p className="text-muted-foreground mt-1">
             Gerencie a frota de veículos
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Veículo
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="default" size="sm">
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              Novo Veículo
+            </Button>
+          </DialogTrigger>
+
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Novo Veículo</DialogTitle>
+            </DialogHeader>
+
+            <VeiculosForm onSuccess={() => setIsDialogOpen(false)} onCancel={() => setIsDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
+      <Card className="p-6">
         <div className="flex gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Buscar por placa, modelo ou marca..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-muted/5 border border-border focus:border-primary/30 focus-visible:ring-primary/30"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
+
+          <Select value={statusFilter} onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-48 bg-muted/5 border border-border">
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="__all__">Todos</SelectItem>
               <SelectItem value={VehicleStatus.ACTIVE}>Ativo</SelectItem>
               <SelectItem value={VehicleStatus.ON_TRIP}>Em Viagem</SelectItem>
               <SelectItem value={VehicleStatus.MAINTENANCE}>Manutenção</SelectItem>
@@ -84,31 +111,31 @@ export default function VehiclesList() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="font-semibold text-lg">{vehicle.placa}</h3>
-                <p className="text-sm text-slate-500">{vehicle.modelo}</p>
+                <p className="text-sm text-muted-foreground">{vehicle.modelo}</p>
               </div>
               <StatusBadge status={vehicle.status} />
             </div>
             
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Marca:</span>
+                <span className="text-muted-foreground">Marca:</span>
                 <span className="font-medium">{vehicle.marca}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Ano:</span>
+                <span className="text-muted-foreground">Ano:</span>
                 <span className="font-medium">{vehicle.ano}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">KM Atual:</span>
-                <span className="font-medium">{vehicle.km_atual.toLocaleString('pt-BR')}</span>
+                <span className="text-muted-foreground">KM Atual:</span>
+                <span className="font-medium">{vehicle.km_atual !== undefined && vehicle.km_atual !== null ? vehicle.km_atual.toLocaleString('pt-BR') : '-'}</span>
               </div>
             </div>
 
             <div className="flex gap-2 mt-4">
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button size="sm" className="flex-1 shadow-sm">
                 Detalhes
               </Button>
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button variant="outline" size="sm" className="flex-1 border-primary/20 shadow-sm">
                 Editar
               </Button>
             </div>
@@ -118,7 +145,7 @@ export default function VehiclesList() {
 
       {filteredVehicles?.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-slate-500">Nenhum veículo encontrado</p>
+          <p className="text-muted-foreground">Nenhum veículo encontrado</p>
         </div>
       )}
     </div>
@@ -127,10 +154,10 @@ export default function VehiclesList() {
 
 function StatusBadge({ status }: { status: VehicleStatus }) {
   const colors = {
-    [VehicleStatus.ACTIVE]: 'bg-green-100 text-green-700',
-    [VehicleStatus.ON_TRIP]: 'bg-blue-100 text-blue-700',
-    [VehicleStatus.MAINTENANCE]: 'bg-amber-100 text-amber-700',
-    [VehicleStatus.INACTIVE]: 'bg-slate-100 text-slate-700',
+    [VehicleStatus.ACTIVE]: 'status-success',
+    [VehicleStatus.ON_TRIP]: 'bg-primary/10 text-primary',
+    [VehicleStatus.MAINTENANCE]: 'status-warning',
+    [VehicleStatus.INACTIVE]: 'bg-muted text-muted-foreground',
   }
 
   const labels = {
