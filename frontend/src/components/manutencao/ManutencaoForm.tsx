@@ -8,9 +8,9 @@ import { useCreateMaintenance } from '@/hooks/useManutencao'
 import { useVehicles } from '@/hooks/useVeiculos'
 import { MaintenanceType, NewMaintenance } from '@/types'
 
-type Props = { onSuccess?: () => void }
+type Props = { onSuccess?: () => void; onCancel?: () => void }
 
-export default function ManutencaoForm({ onSuccess }: Props) {
+export default function ManutencaoForm({ onSuccess, onCancel }: Props) {
   const [form, setForm] = useState<Partial<NewMaintenance>>({ data_man: new Date().toISOString().slice(0, 10) })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const create = useCreateMaintenance()
@@ -77,19 +77,19 @@ export default function ManutencaoForm({ onSuccess }: Props) {
   const creating = create.status === 'pending'
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card className="p-8">
+        <div className="grid grid-cols-1 gap-6">
           <div>
-            <Label>Data</Label>
-            <Input type="date" value={form.data_man || ''} onChange={(e) => update('data_man', e.target.value)} required />
+            <Label htmlFor="manutencao-data" className="mb-2">Data</Label>
+            <Input id="manutencao-data" name="data_man" className="py-3" type="date" value={form.data_man || ''} onChange={(e) => update('data_man', e.target.value)} required />
             {errors.data_man && <p className="text-danger text-sm mt-1">{errors.data_man}</p>}
           </div>
 
           <div>
-            <Label>Tipo</Label>
+            <Label htmlFor="manutencao-tipo" className="mb-2">Tipo</Label>
             <Select value={form.tipo || ''} onValueChange={(v) => update('tipo', v as MaintenanceType)}>
-              <SelectTrigger>
+              <SelectTrigger id="manutencao-tipo" className="py-3">
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -103,20 +103,20 @@ export default function ManutencaoForm({ onSuccess }: Props) {
           </div>
 
           <div>
-            <Label>Descrição</Label>
-            <Input value={form.descricao || ''} onChange={(e) => update('descricao', e.target.value)} required />
+            <Label htmlFor="manutencao-descricao" className="mb-2">Descrição</Label>
+            <Input id="manutencao-descricao" name="descricao" autoFocus className="py-3" value={form.descricao || ''} onChange={(e) => update('descricao', e.target.value)} required />
             {errors.descricao && <p className="text-danger text-sm mt-1">{errors.descricao}</p>}
           </div>
 
           <div>
-            <Label>Valor (R$)</Label>
-            <Input type="number" value={form.valor ?? ''} onChange={(e) => update('valor', e.target.value ? Number(e.target.value) : undefined)} />
+            <Label htmlFor="manutencao-valor" className="mb-2">Valor (R$)</Label>
+            <Input id="manutencao-valor" name="valor" className="py-3" type="number" value={form.valor ?? ''} onChange={(e) => update('valor', e.target.value ? Number(e.target.value) : undefined)} />
           </div>
 
           <div>
-            <Label>Veículo</Label>
+            <Label htmlFor="manutencao-veiculo" className="mb-2">Veículo</Label>
             <Select value={String(form.id_veiculo || '')} onValueChange={(v) => update('id_veiculo', Number(v))}>
-              <SelectTrigger>
+              <SelectTrigger id="manutencao-veiculo" className="py-3">
                 <SelectValue placeholder="Selecione o veículo" />
               </SelectTrigger>
               <SelectContent>
@@ -129,18 +129,19 @@ export default function ManutencaoForm({ onSuccess }: Props) {
           </div>
 
           <div>
-            <Label>KM Manutenção</Label>
-            <Input type="number" value={form.km_manutencao ?? ''} onChange={(e) => update('km_manutencao', e.target.value ? Number(e.target.value) : undefined)} />
+            <Label htmlFor="manutencao-km" className="mb-2">KM Manutenção</Label>
+            <Input id="manutencao-km" name="km_manutencao" className="py-3" type="number" value={form.km_manutencao ?? ''} onChange={(e) => update('km_manutencao', e.target.value ? Number(e.target.value) : undefined)} />
           </div>
 
           <div>
-            <Label>Fornecedor</Label>
-            <Input value={form.fornecedor || ''} onChange={(e) => update('fornecedor', e.target.value)} />
+            <Label htmlFor="manutencao-fornecedor" className="mb-2">Fornecedor</Label>
+            <Input id="manutencao-fornecedor" name="fornecedor" className="py-3" value={form.fornecedor || ''} onChange={(e) => update('fornecedor', e.target.value)} />
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button type="submit" disabled={creating}>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button variant="outline" type="button" onClick={() => onCancel?.()} size="sm">Cancelar</Button>
+          <Button type="submit" disabled={creating} className="shadow-sm">
             {creating ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>

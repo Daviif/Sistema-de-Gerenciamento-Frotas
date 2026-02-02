@@ -42,7 +42,7 @@ export default function AlertsPanel({ drivers, vehicles, maxVehiclesToShow = 3 }
           )}
 
           {drivers.length === 0 && vehicles.length === 0 && (
-            <div className="text-center py-8 text-muted">
+            <div className="text-center py-8 text-muted-foreground">
               <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
               <p>Todos os sistemas normais</p>
             </div>

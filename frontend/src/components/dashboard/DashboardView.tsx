@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { AlertTriangle, CheckCircle, Clock, AlertOctagon, Truck, Users, LucideIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStats } from '@/hooks/useStats'
+import Loading from '@/components/ui/loading'
 import { useDrivers } from '@/hooks/useMotorista'
 import { useVehicles } from '@/hooks/useVeiculos'
 import { Driver, Vehicle, VehicleStatus } from '@/types'
@@ -40,7 +41,7 @@ export default function DashboardView() {
   if (statsLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <Loading />
       </div>
     )
   }
@@ -137,7 +138,7 @@ export default function DashboardView() {
               )}
               
               {alerts.drivers.length === 0 && alerts.vehicles.length === 0 && (
-                <div className="text-center py-8 text-muted">
+                <div className="text-center py-8 text-muted-foreground">
                   <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
                   <p>Todos os sistemas normais</p>
                 </div>

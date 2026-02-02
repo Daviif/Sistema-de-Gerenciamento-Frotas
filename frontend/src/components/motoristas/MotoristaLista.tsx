@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import MotoristaForm from './MotoristaForm'
+import Loading from '@/components/ui/loading'
 import { useDrivers } from '@/hooks/useMotorista'
 import { 
   Select,
@@ -36,7 +37,7 @@ export default function DriversList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <Loading />
       </div>
     )
   }
@@ -53,8 +54,8 @@ export default function DriversList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button size="sm">
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Novo Motorista
             </Button>
           </DialogTrigger>
@@ -64,21 +65,21 @@ export default function DriversList() {
               <DialogTitle>Novo Motorista</DialogTitle>
             </DialogHeader>
 
-            <MotoristaForm onSuccess={() => setIsDialogOpen(false)} />
+            <MotoristaForm onSuccess={() => setIsDialogOpen(false)} onCancel={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
+      <Card className="p-6">
         <div className="flex gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Buscar por nome, CPF ou CNH..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-muted/5 border border-border focus:border-primary/30 focus-visible:ring-primary/30"
             />
           </div>
 
@@ -120,7 +121,7 @@ export default function DriversList() {
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Validade CNH:</span>
                 <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
+                  <Calendar className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
                   <span className={`font-medium ${isCNHExpiring(driver.validade_cnh) ? 'text-danger' : ''}`}>
                     {driver.validade_cnh ? new Date(driver.validade_cnh).toLocaleDateString('pt-BR') : '-'}
                   </span>
@@ -135,10 +136,10 @@ export default function DriversList() {
             )}
 
             <div className="flex gap-2 mt-4">
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button variant="outline" size="sm" className="flex-1 shadow-sm">
                 Detalhes
               </Button>
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button variant="outline" size="sm" className="flex-1 shadow-sm">
                 Editar
               </Button>
             </div>

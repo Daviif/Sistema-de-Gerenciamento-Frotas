@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import ManutencaoForm from './ManutencaoForm'
+import Loading from '@/components/ui/loading'
 import { api } from '@/lib/api'
 import { Maintenance, MaintenanceType } from '@/types'
 import {
@@ -38,7 +39,7 @@ export default function MaintenanceList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <Loading />
       </div>
     )
   }
@@ -55,8 +56,8 @@ export default function MaintenanceList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button size="sm">
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Nova Manutenção
             </Button>
           </DialogTrigger>
@@ -66,13 +67,13 @@ export default function MaintenanceList() {
               <DialogTitle>Nova Manutenção</DialogTitle>
             </DialogHeader>
 
-            <ManutencaoForm onSuccess={() => setIsDialogOpen(false)} />
+            <ManutencaoForm onSuccess={() => setIsDialogOpen(false)} onCancel={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
+      <Card className="p-6">
         <div className="flex gap-4">
           <Select value={typeFilter} onValueChange={handleTypeChange}>
             <SelectTrigger className="w-48">
@@ -97,10 +98,10 @@ export default function MaintenanceList() {
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${maintenance.concluida ? 'status-success' : 'status-warning'}`}>
                   {maintenance.concluida ? (
-                    <CheckCircle className="w-5 h-5" />
+                    <CheckCircle className="w-5 h-5 text-current" aria-hidden="true" />
                   ) : (
-                    <Wrench className="w-5 h-5" />
-                  )}
+                    <Wrench className="w-5 h-5 text-current" aria-hidden="true" />
+                  )} 
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -121,7 +122,7 @@ export default function MaintenanceList() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-muted" />
+                <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <div>
                   <p className="text-muted-foreground">Data</p>
                   <p className="font-medium">
@@ -131,7 +132,7 @@ export default function MaintenanceList() {
               </div>
 
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-muted" />
+                <DollarSign className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <div>
                   <p className="text-muted-foreground">Valor</p>
                   <p className="font-medium">
@@ -157,10 +158,10 @@ export default function MaintenanceList() {
 
             {!maintenance.concluida && (
               <div className="flex gap-2 mt-4">
-                <Button variant="default" size="sm">
+                <Button variant="default" size="sm" className="shadow-sm">
                   Marcar como Concluída
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="shadow-sm">
                   Editar
                 </Button>
               </div>

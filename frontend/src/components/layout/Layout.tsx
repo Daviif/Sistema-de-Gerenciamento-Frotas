@@ -133,7 +133,7 @@ function SidebarContent({
                     >
                       <item.icon
                         className={cn(
-                          isActive ? 'text-primary' : 'text-muted group-hover:text-primary',
+                          isActive ? 'text-primary' : 'text-primary/70 group-hover:text-primary',
                           'h-6 w-6 shrink-0'
                         )}
                       />

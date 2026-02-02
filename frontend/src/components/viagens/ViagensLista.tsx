@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { api } from '@/lib/api'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import ViagemForm from './ViagemForm'
+import Loading from '@/components/ui/loading'
 import { Trip, TripStatus } from '@/types'
 import {
   Select,
@@ -38,7 +39,7 @@ export default function TripsList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <Loading />
       </div>
     )
   }
@@ -55,8 +56,8 @@ export default function TripsList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button size="sm">
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Nova Viagem
             </Button>
           </DialogTrigger>
@@ -66,13 +67,13 @@ export default function TripsList() {
               <DialogTitle>Nova Viagem</DialogTitle>
             </DialogHeader>
 
-            <ViagemForm onSuccess={() => setIsDialogOpen(false)} />
+            <ViagemForm onSuccess={() => setIsDialogOpen(false)} onCancel={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
+      <Card className="p-6">
         <div className="flex gap-4">
           <Select value={statusFilter} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-48">
@@ -95,8 +96,8 @@ export default function TripsList() {
           <Card key={trip.id_viagem} className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <MapPin className="w-5 h-5 text-primary" />
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <MapPin className="w-5 h-5 text-current" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -112,7 +113,7 @@ export default function TripsList() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <Truck className="w-4 h-4 text-muted" />
+                <Truck className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <div>
                   <p className="text-muted-foreground">Veículo</p>
                   <p className="font-medium">{trip.placa} - {trip.modelo}</p>
@@ -120,7 +121,7 @@ export default function TripsList() {
               </div>
 
               <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-muted" />
+                <User className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <div>
                   <p className="text-muted-foreground">Motorista</p>
                   <p className="font-medium">{trip.motorista}</p>
@@ -128,7 +129,7 @@ export default function TripsList() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-muted" />
+                <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <div>
                   <p className="text-muted-foreground">Saída</p>
                   <p className="font-medium">
@@ -139,7 +140,7 @@ export default function TripsList() {
 
               {trip.data_chegada && (
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted" />
+                  <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   <div>
                     <p className="text-muted-foreground">Chegada</p>
                     <p className="font-medium">
@@ -160,10 +161,10 @@ export default function TripsList() {
 
             {trip.status_viagem === TripStatus.IN_PROGRESS && (
               <div className="flex gap-2 mt-4">
-                <Button variant="default" size="sm">
+                <Button variant="default" size="sm" className="shadow-sm">
                   Finalizar Viagem
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="shadow-sm">
                   Cancelar
                 </Button>
               </div>

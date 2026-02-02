@@ -9,9 +9,10 @@ import { validarCPF, validarCNH, validarCategoriaCNH } from '@/lib/validators'
 
 type Props = {
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export default function MotoristaForm({ onSuccess }: Props) {
+export default function MotoristaForm({ onSuccess, onCancel }: Props) {
   const [form, setForm] = useState<Partial<NewDriver>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const create = useCreateDriver()
@@ -80,42 +81,43 @@ export default function MotoristaForm({ onSuccess }: Props) {
   const creating = create.status === 'pending'
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card className="p-8">
+        <div className="grid grid-cols-1 gap-6">
           <div>
-            <Label>Nome</Label>
-            <Input value={form.nome || ''} onChange={(e) => update('nome', e.target.value)} required />
+            <Label htmlFor="motorista-nome" className="mb-2">Nome</Label>
+            <Input id="motorista-nome" name="nome" autoFocus className="py-3" value={form.nome || ''} onChange={(e) => update('nome', e.target.value)} required />
             {errors.nome && <p className="text-danger text-sm mt-1">{errors.nome}</p>}
           </div>
 
           <div>
-            <Label>CPF</Label>
-            <Input value={form.cpf || ''} onChange={(e) => update('cpf', e.target.value.replace(/\D/g, ''))} required />
+            <Label htmlFor="motorista-cpf" className="mb-2">CPF</Label>
+            <Input id="motorista-cpf" name="cpf" className="py-3" value={form.cpf || ''} onChange={(e) => update('cpf', e.target.value.replace(/\D/g, ''))} required />
             {errors.cpf && <p className="text-danger text-sm mt-1">{errors.cpf}</p>}
           </div>
 
           <div>
-            <Label>CNH</Label>
-            <Input value={form.cnh || ''} onChange={(e) => update('cnh', e.target.value.replace(/\D/g, ''))} required />
+            <Label htmlFor="motorista-cnh" className="mb-2">CNH</Label>
+            <Input id="motorista-cnh" name="cnh" className="py-3" value={form.cnh || ''} onChange={(e) => update('cnh', e.target.value.replace(/\D/g, ''))} required />
             {errors.cnh && <p className="text-danger text-sm mt-1">{errors.cnh}</p>}
           </div>
 
           <div>
-            <Label>Categoria CNH</Label>
-            <Input value={form.cat_cnh || ''} onChange={(e) => update('cat_cnh', e.target.value.toUpperCase())} required />
+            <Label htmlFor="motorista-cat" className="mb-2">Categoria CNH</Label>
+            <Input id="motorista-cat" name="cat_cnh" className="py-3" value={form.cat_cnh || ''} onChange={(e) => update('cat_cnh', e.target.value.toUpperCase())} required />
             {errors.cat_cnh && <p className="text-danger text-sm mt-1">{errors.cat_cnh}</p>}
           </div>
 
           <div>
-            <Label>Validade CNH</Label>
-            <Input type="date" value={form.validade_cnh || ''} onChange={(e) => update('validade_cnh', e.target.value)} required />
+            <Label htmlFor="motorista-validade" className="mb-2">Validade CNH</Label>
+            <Input id="motorista-validade" name="validade_cnh" className="py-3" type="date" value={form.validade_cnh || ''} onChange={(e) => update('validade_cnh', e.target.value)} required />
             {errors.validade_cnh && <p className="text-danger text-sm mt-1">{errors.validade_cnh}</p>}
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button type="submit" disabled={creating}>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button variant="outline" type="button" onClick={() => onCancel?.()} size="sm">Cancelar</Button>
+          <Button type="submit" disabled={creating} className="shadow-sm">
             {creating ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>

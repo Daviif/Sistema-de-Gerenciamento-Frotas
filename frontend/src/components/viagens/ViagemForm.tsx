@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
@@ -9,9 +9,9 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { NewTrip, City } from '@/types'
 
-type Props = { onSuccess?: () => void }
+type Props = { onSuccess?: () => void; onCancel?: () => void }
 
-export default function ViagemForm({ onSuccess }: Props) {
+export default function ViagemForm({ onSuccess, onCancel }: Props) {
   const [form, setForm] = useState<Partial<NewTrip>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const create = useCreateTrip()
@@ -62,14 +62,20 @@ export default function ViagemForm({ onSuccess }: Props) {
 
   const creating = create.status === 'pending'
 
+  useEffect(() => {
+    // focus the main select trigger when modal opens
+    const el = document.getElementById('viagem-veiculo') as HTMLElement | null
+    if (el) el.focus()
+  }, [])
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card className="p-8">
+        <div className="grid grid-cols-1 gap-6">
           <div>
-            <label className="text-sm font-medium mb-1 block">Veículo</label>
+            <label htmlFor="viagem-veiculo" className="text-sm font-medium mb-2 block">Veículo</label>
             <Select value={String(form.id_veiculo || '')} onValueChange={(v) => update('id_veiculo', Number(v))}>
-              <SelectTrigger>
+              <SelectTrigger id="viagem-veiculo" className="py-3">
                 <SelectValue placeholder="Selecione o veículo" />
               </SelectTrigger>
               <SelectContent>
@@ -82,9 +88,9 @@ export default function ViagemForm({ onSuccess }: Props) {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1 block">Motorista (opcional)</label>
+            <label htmlFor="viagem-motorista" className="text-sm font-medium mb-2 block">Motorista (opcional)</label>
             <Select value={form.cpf_motorista || ''} onValueChange={(v) => update('cpf_motorista', v)}>
-              <SelectTrigger>
+              <SelectTrigger id="viagem-motorista" className="py-3">
                 <SelectValue placeholder="Selecione o motorista" />
               </SelectTrigger>
               <SelectContent>
@@ -96,9 +102,9 @@ export default function ViagemForm({ onSuccess }: Props) {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1 block">Cidade Origem (opcional)</label>
+            <label htmlFor="viagem-origem" className="text-sm font-medium mb-2 block">Cidade Origem (opcional)</label>
             <Select value={String(form.cidade_origem || '')} onValueChange={(v) => update('cidade_origem', Number(v))}>
-              <SelectTrigger>
+              <SelectTrigger id="viagem-origem" className="py-3">
                 <SelectValue placeholder="Selecione a cidade de origem" />
               </SelectTrigger>
               <SelectContent>
@@ -110,9 +116,9 @@ export default function ViagemForm({ onSuccess }: Props) {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1 block">Cidade Destino (opcional)</label>
+            <label htmlFor="viagem-destino" className="text-sm font-medium mb-2 block">Cidade Destino (opcional)</label>
             <Select value={String(form.cidade_destino || '')} onValueChange={(v) => update('cidade_destino', Number(v))}>
-              <SelectTrigger>
+              <SelectTrigger id="viagem-destino" className="py-3">
                 <SelectValue placeholder="Selecione a cidade destino" />
               </SelectTrigger>
               <SelectContent>
@@ -124,8 +130,9 @@ export default function ViagemForm({ onSuccess }: Props) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button type="submit" disabled={creating}>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button variant="outline" type="button" onClick={() => onCancel?.()} size="sm">Cancelar</Button>
+          <Button type="submit" disabled={creating} className="shadow-sm">
             {creating ? 'Salvando...' : 'Criar Viagem'}
           </Button>
         </div>

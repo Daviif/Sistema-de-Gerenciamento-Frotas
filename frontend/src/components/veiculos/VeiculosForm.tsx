@@ -8,9 +8,10 @@ import { NewVehicle } from '@/types'
 
 type Props = {
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export default function VeiculosForm({ onSuccess }: Props) {
+export default function VeiculosForm({ onSuccess, onCancel }: Props) {
   const [form, setForm] = useState<Partial<NewVehicle>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const create = useCreateVehicle()
@@ -91,52 +92,53 @@ export default function VeiculosForm({ onSuccess }: Props) {
   const creating = create.status === 'pending'
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card className="p-8">
+        <div className="grid grid-cols-1 gap-6">
           <div>
-            <Label>Placa</Label>
-            <Input value={form.placa || ''} onChange={(e) => update('placa', e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))} required />
+            <Label htmlFor="veiculo-placa" className="mb-2">Placa</Label>
+            <Input id="veiculo-placa" name="placa" autoFocus className="py-3" value={form.placa || ''} onChange={(e) => update('placa', e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))} required />
             {errors.placa && <p className="text-danger text-sm mt-1">{errors.placa}</p>}
           </div>
 
           <div>
-            <Label>Marca</Label>
-            <Input value={form.marca || ''} onChange={(e) => update('marca', e.target.value)} required />
+            <Label htmlFor="veiculo-marca" className="mb-2">Marca</Label>
+            <Input id="veiculo-marca" name="marca" className="py-3" value={form.marca || ''} onChange={(e) => update('marca', e.target.value)} />
             {errors.marca && <p className="text-danger text-sm mt-1">{errors.marca}</p>}
           </div>
 
           <div>
-            <Label>Modelo</Label>
-            <Input value={form.modelo || ''} onChange={(e) => update('modelo', e.target.value)} required />
+            <Label htmlFor="veiculo-modelo" className="mb-2">Modelo</Label>
+            <Input id="veiculo-modelo" name="modelo" className="py-3" value={form.modelo || ''} onChange={(e) => update('modelo', e.target.value)} />
             {errors.modelo && <p className="text-danger text-sm mt-1">{errors.modelo}</p>}
           </div>
 
           <div>
-            <Label>Ano</Label>
-            <Input type="number" value={form.ano ?? ''} onChange={(e) => update('ano', Number(e.target.value))} required />
+            <Label htmlFor="veiculo-ano" className="mb-2">Ano</Label>
+            <Input id="veiculo-ano" name="ano" className="py-3" type="number" value={form.ano ?? ''} onChange={(e) => update('ano', Number(e.target.value))} required />
             {errors.ano && <p className="text-danger text-sm mt-1">{errors.ano}</p>}
           </div>
 
           <div>
-            <Label>Tipo</Label>
-            <Input value={form.tipo || ''} onChange={(e) => update('tipo', e.target.value)} required />
+            <Label htmlFor="veiculo-tipo" className="mb-2">Tipo</Label>
+            <Input id="veiculo-tipo" name="tipo" className="py-3" value={form.tipo || ''} onChange={(e) => update('tipo', e.target.value)} required />
             {errors.tipo && <p className="text-danger text-sm mt-1">{errors.tipo}</p>}
           </div>
 
           <div>
-            <Label>KM Atual</Label>
-            <Input type="number" value={form.km_atual ?? ''} onChange={(e) => update('km_atual', Number(e.target.value))} />
+            <Label htmlFor="veiculo-km" className="mb-2">KM Atual</Label>
+            <Input id="veiculo-km" name="km_atual" className="py-3" type="number" value={form.km_atual ?? ''} onChange={(e) => update('km_atual', Number(e.target.value))} />
           </div>
 
           <div>
-            <Label>Capacidade do Tanque (L)</Label>
-            <Input type="number" value={form.capacidade_tanque ?? ''} onChange={(e) => update('capacidade_tanque', Number(e.target.value))} />
+            <Label htmlFor="veiculo-capacidade" className="mb-2">Capacidade do Tanque (L)</Label>
+            <Input id="veiculo-capacidade" name="capacidade_tanque" className="py-3" type="number" value={form.capacidade_tanque ?? ''} onChange={(e) => update('capacidade_tanque', Number(e.target.value))} />
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button type="submit" disabled={creating}>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button variant="outline" type="button" onClick={() => onCancel?.()} size="sm">Cancelar</Button>
+          <Button type="submit" disabled={creating} className="shadow-sm">
             {creating ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>

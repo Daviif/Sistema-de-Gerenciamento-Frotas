@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import VeiculosForm from './VeiculosForm'
+import Loading from '@/components/ui/loading'
 import { useVehicles } from '@/hooks/useVeiculos'
 import { 
   Select,
@@ -41,22 +42,8 @@ export default function VehiclesList() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-lg bg-muted-foreground/10" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-3/4 bg-muted rounded" />
-                <div className="h-6 w-1/2 bg-muted rounded mt-1" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="h-4 bg-muted rounded" />
-              <div className="h-4 bg-muted rounded w-2/3" />
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center justify-center h-64">
+        <Loading />
       </div>
     )
   }
@@ -73,8 +60,8 @@ export default function VehiclesList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="default" className="shadow">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button variant="default" size="sm">
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Novo Veículo
             </Button>
           </DialogTrigger>
@@ -84,26 +71,26 @@ export default function VehiclesList() {
               <DialogTitle>Novo Veículo</DialogTitle>
             </DialogHeader>
 
-            <VeiculosForm onSuccess={() => setIsDialogOpen(false)} />
+            <VeiculosForm onSuccess={() => setIsDialogOpen(false)} onCancel={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
+      <Card className="p-6">
         <div className="flex gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/70" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Buscar por placa, modelo ou marca..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-primary/5 border border-primary/10 focus:border-primary/30 focus-visible:ring-primary/30"
+              className="pl-10 bg-muted/5 border border-border focus:border-primary/30 focus-visible:ring-primary/30"
             />
           </div>
 
           <Select value={statusFilter} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-48 bg-primary/5 border border-primary/10">
+            <SelectTrigger className="w-48 bg-muted/5 border border-border">
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
             <SelectContent>
@@ -145,10 +132,10 @@ export default function VehiclesList() {
             </div>
 
             <div className="flex gap-2 mt-4">
-              <Button size="sm" className="flex-1">
+              <Button size="sm" className="flex-1 shadow-sm">
                 Detalhes
               </Button>
-              <Button variant="outline" size="sm" className="flex-1 border-primary/20">
+              <Button variant="outline" size="sm" className="flex-1 border-primary/20 shadow-sm">
                 Editar
               </Button>
             </div>
