@@ -1,6 +1,6 @@
 function Skeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`animate-pulse bg-muted rounded-md ${className}`} />
+    <div className={`animate-pulse bg-muted rounded-lg ${className}`} />
   )
 }
 

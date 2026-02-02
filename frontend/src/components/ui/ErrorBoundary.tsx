@@ -25,18 +25,18 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-8 bg-danger-50 rounded-md border border-danger text-danger">
+        <div className="p-8 bg-danger-50 rounded-lg border border-danger text-danger shadow-sm">
           <h2 className="text-lg font-semibold">Erro na aplicação</h2>
           <p className="mt-2">Algo deu errado ao renderizar esta página.</p>
           <div className="mt-4">
             <button
-              className="inline-flex items-center rounded-md bg-red-600 px-3 py-1 text-white text-sm"
+              className="inline-flex items-center rounded-lg bg-red-600 px-3 py-1 text-white text-sm shadow"
               onClick={this.reset}
             >
               Tentar novamente
             </button>
             <button
-              className="ml-2 inline-flex items-center rounded-md bg-slate-100 px-3 py-1 text-sm"
+              className="ml-2 inline-flex items-center rounded-lg bg-slate-100 px-3 py-1 text-sm shadow"
               onClick={() => window.location.reload()}
             >
               Recarregar página

@@ -66,14 +66,14 @@ export default function VehiclesList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Veículos</h1>
+          <h1 className="text-3xl font-bold text-primary">Veículos</h1>
           <p className="text-muted-foreground mt-1">
             Gerencie a frota de veículos
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button variant="default" className="shadow">
               <Plus className="w-4 h-4 mr-2" />
               Novo Veículo
             </Button>
@@ -93,17 +93,17 @@ export default function VehiclesList() {
       <Card className="p-4">
         <div className="flex gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/70" />
             <Input
               placeholder="Buscar por placa, modelo ou marca..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-primary/5 border border-primary/10 focus:border-primary/30 focus-visible:ring-primary/30"
             />
           </div>
 
           <Select value={statusFilter} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-48 bg-primary/5 border border-primary/10">
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
             <SelectContent>
@@ -145,10 +145,10 @@ export default function VehiclesList() {
             </div>
 
             <div className="flex gap-2 mt-4">
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button size="sm" className="flex-1">
                 Detalhes
               </Button>
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button variant="outline" size="sm" className="flex-1 border-primary/20">
                 Editar
               </Button>
             </div>

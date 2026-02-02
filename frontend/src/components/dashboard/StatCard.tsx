@@ -19,9 +19,9 @@ export default function StatCard({ title, value, icon: Icon, color }: StatCardPr
   return (
     <Card>
       <CardContent className="p-6 flex items-center">
-        <div className={`p-3 rounded-lg mr-4 shadow-sm`} style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(0,0,0,0.02))' }}>
-          <div className={`p-2 rounded-md ${colorClasses[color]} bg-opacity-20`}> 
-            <Icon className="w-6 h-6" />
+        <div className={`p-3 rounded-lg mr-4 shadow-sm`} style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.10), rgba(0,0,0,0.02))' }}>
+          <div className={`p-2 rounded-lg ${colorClasses[color]} bg-opacity-20`}> 
+            <Icon className="w-6 h-6 text-primary" />
           </div>
         </div>
         <div>

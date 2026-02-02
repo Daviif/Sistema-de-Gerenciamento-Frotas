@@ -93,7 +93,7 @@ function SidebarContent({
   onClose?: () => void
 }) {
   return (
-    <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-card px-6 pb-4">
+    <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-card px-6 pb-4">
       {/* Logo */}
       <div className="flex h-16 shrink-0 items-center justify-between">
         <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ function SidebarContent({
                         isActive
                           ? 'bg-primary/10 text-primary'
                           : 'text-muted-foreground hover:text-primary hover:bg-muted',
-                        'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors'
+                        'group flex gap-x-3 rounded-lg px-3 py-2 text-sm leading-6 font-semibold transition-colors'
                       )}
                     >
                       <item.icon
