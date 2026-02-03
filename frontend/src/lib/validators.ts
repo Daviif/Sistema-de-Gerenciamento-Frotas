@@ -36,3 +36,18 @@ export function validarCategoriaCNH(categoria: string): boolean {
   const categoriasValidas = ['A', 'B', 'AB', 'C', 'D', 'E', 'AC', 'AD', 'AE']
   return categoriasValidas.includes(categoria.toUpperCase())
 }
+
+export function validarUF(uf: string): boolean {
+  const ufsValidas = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+    'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+    'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+  ]
+  return ufsValidas.includes(uf.toUpperCase())
+}
+
+export const UFS_BRASIL = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+] as const

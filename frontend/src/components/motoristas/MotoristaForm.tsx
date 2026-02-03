@@ -1,21 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { useCreateDriver } from '@/hooks/useMotorista'
-import { NewDriver } from '@/types'
+import { useCreateDriver, useUpdateDriver } from '@/hooks/useMotorista'
+import { NewDriver, Driver } from '@/types'
 import { validarCPF, validarCNH, validarCategoriaCNH } from '@/lib/validators'
 
 type Props = {
   onSuccess?: () => void
   onCancel?: () => void
+  initialData?: Driver | null
 }
 
-export default function MotoristaForm({ onSuccess, onCancel }: Props) {
+export default function MotoristaForm({ onSuccess, onCancel, initialData }: Props) {
+  const isEdit = !!initialData
   const [form, setForm] = useState<Partial<NewDriver>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const create = useCreateDriver()
+  const updateMutation = useUpdateDriver()
+
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        nome: initialData.nome,
+        cpf: initialData.cpf,
+        cnh: initialData.cnh,
+        cat_cnh: initialData.cat_cnh,
+        validade_cnh: initialData.validade_cnh,
+      })
+    } else {
+      setForm({})
+    }
+  }, [initialData])
 
   function update<K extends keyof NewDriver>(key: K, value: NewDriver[K] | undefined) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -70,7 +87,11 @@ export default function MotoristaForm({ onSuccess, onCancel }: Props) {
     }
 
     try {
-      await create.mutateAsync(payload)
+      if (isEdit && initialData) {
+        await updateMutation.mutateAsync({ cpf: initialData.cpf, data: payload })
+      } else {
+        await create.mutateAsync(payload)
+      }
       setForm({})
       onSuccess?.()
     } catch {
@@ -78,7 +99,7 @@ export default function MotoristaForm({ onSuccess, onCancel }: Props) {
     }
   }
 
-  const creating = create.status === 'pending'
+  const creating = create.status === 'pending' || updateMutation.status === 'pending'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -92,7 +113,7 @@ export default function MotoristaForm({ onSuccess, onCancel }: Props) {
 
           <div>
             <Label htmlFor="motorista-cpf" className="mb-2">CPF</Label>
-            <Input id="motorista-cpf" name="cpf" className="py-3" value={form.cpf || ''} onChange={(e) => update('cpf', e.target.value.replace(/\D/g, ''))} required />
+            <Input id="motorista-cpf" name="cpf" className="py-3" value={form.cpf || ''} onChange={(e) => update('cpf', e.target.value.replace(/\D/g, ''))} required readOnly={isEdit} />
             {errors.cpf && <p className="text-danger text-sm mt-1">{errors.cpf}</p>}
           </div>
 

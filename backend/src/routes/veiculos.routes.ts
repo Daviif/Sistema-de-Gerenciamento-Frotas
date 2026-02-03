@@ -39,7 +39,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 }))
 
 router.post('/', asyncHandler(async (req: Request, res: Response) => {
-  const { placa, marca, modelo, ano, tipo, km_atual, status = 'ativo'} = req.body
+  const { placa, marca, modelo, ano, tipo, km_atual, capacidade_tanque, status = 'ativo'} = req.body
 
   if (!placa || !modelo || !marca || !tipo) {
     throw new AppError('Placa, modelo, marca e tipo são obrigatórios')
@@ -57,7 +57,8 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('Ano inválido')
   }
 
-  if (km_atual !== undefined && !validarValorPositivo(km_atual)) {
+  const kmAtualPost = km_atual !== undefined && km_atual !== null && km_atual !== '' ? Number(km_atual) : undefined
+  if (kmAtualPost !== undefined && !validarValorPositivo(kmAtualPost)) {
     throw new AppError('Quilometragem deve ser um valor positivo')
   }
 
@@ -76,11 +77,19 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('Já existe um veículo com esta placa', 409)
   }
 
+  const kmAtualNum = kmAtualPost ?? 0
+  const capTanqueNum = capacidade_tanque !== undefined && capacidade_tanque !== null && capacidade_tanque !== ''
+    ? Number(capacidade_tanque)
+    : null
+  if (capTanqueNum !== null && !validarValorPositivo(capTanqueNum)) {
+    throw new AppError('Capacidade do tanque deve ser um valor positivo')
+  }
+
   const { rows } = await pool.query(
-    `INSERT INTO veiculo (placa, modelo, marca, ano, tipo, km_atual, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO veiculo (placa, modelo, marca, ano, tipo, km_atual, capacidade_tanque, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [placa.toUpperCase(), modelo, marca, ano, tipoCorreto, km_atual || 0, status]
+    [placa.toUpperCase(), modelo, marca, ano, tipoCorreto, kmAtualNum, capTanqueNum, status]
   )
 
   res.status(201).json(rows[0])
@@ -124,11 +133,12 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('Ano inválido')
   }
 
-  if (km_atual !== undefined) {
-    if (!validarValorPositivo(km_atual)) {
+  const kmAtualNum = km_atual !== undefined && km_atual !== null && km_atual !== '' ? Number(km_atual) : undefined
+  if (kmAtualNum !== undefined) {
+    if (!validarValorPositivo(kmAtualNum)) {
       throw new AppError('Quilometragem deve ser um valor positivo')
     }
-    if (km_atual < veiculoAtual.km_atual) {
+    if (kmAtualNum < Number(veiculoAtual.km_atual)) {
       throw new AppError('Quilometragem não pode ser menor que a atual')
     }
   }
@@ -162,8 +172,8 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
       modelo,
       marca,
       ano,
-      km_atual,
-      capacidade_tanque,
+      kmAtualNum,
+      capacidade_tanque != null && capacidade_tanque !== '' ? Number(capacidade_tanque) : capacidade_tanque,
       status,
       id
     ]

@@ -1,13 +1,14 @@
 // src/components/motoristas/MotoristaLista.tsx
 import { useState } from 'react'
-import { Plus, Search, Calendar } from 'lucide-react'
+import { Plus, Search, Calendar, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import MotoristaForm from './MotoristaForm'
+import DetalhesMotorista from './DetalhesMotorista'
 import Loading from '@/components/ui/loading'
-import { useDrivers } from '@/hooks/useMotorista'
+import { useDrivers, useDeleteDriver } from '@/hooks/useMotorista'
 import { 
   Select,
   SelectContent,
@@ -21,8 +22,40 @@ export default function DriversList() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  
+  const [driverToEdit, setDriverToEdit] = useState<Driver | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
+  const [selectedCpfs, setSelectedCpfs] = useState<Set<string>>(new Set())
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const { data: drivers, isLoading } = useDrivers(statusFilter)
+  const deleteDriver = useDeleteDriver()
+
+  function toggleSelect(cpf: string) {
+    setSelectedCpfs((prev) => {
+      const next = new Set(prev)
+      if (next.has(cpf)) next.delete(cpf)
+      else next.add(cpf)
+      return next
+    })
+  }
+
+  function openDeleteConfirm() {
+    if (selectedCpfs.size === 0) return
+    setDeleteConfirmOpen(true)
+  }
+
+  async function confirmDelete() {
+    if (selectedCpfs.size === 0) return
+    for (const cpf of selectedCpfs) {
+      try {
+        await deleteDriver.mutateAsync(cpf)
+      } catch {
+        // toast no hook
+      }
+    }
+    setSelectedCpfs(new Set())
+    setDeleteConfirmOpen(false)
+  }
 
   function handleStatusChange(value: string) {
     setStatusFilter(value === '__all__' ? '' : value)
@@ -52,23 +85,38 @@ export default function DriversList() {
             Gerencie os motoristas da frota
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              Novo Motorista
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo Motorista</DialogTitle>
-            </DialogHeader>
-
-            <MotoristaForm onSuccess={() => setIsDialogOpen(false)} onCancel={() => setIsDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => { setDriverToEdit(null); setIsDialogOpen(true) }}>
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Novo Motorista
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+            disabled={selectedCpfs.size === 0 || deleteDriver.isPending}
+            onClick={openDeleteConfirm}
+          >
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
+            Deletar motorista{selectedCpfs.size > 1 ? 's' : ''}
+          </Button>
+        </div>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setDriverToEdit(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{driverToEdit ? 'Editar Motorista' : 'Novo Motorista'}</DialogTitle>
+          </DialogHeader>
+
+          <MotoristaForm
+            initialData={driverToEdit}
+            onSuccess={() => setIsDialogOpen(false)}
+            onCancel={() => setIsDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Filters */}
       <Card className="p-6">
@@ -101,8 +149,17 @@ export default function DriversList() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredDrivers?.map((driver: Driver) => (
           <Card key={driver.cpf} className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
+            <div className="flex items-start justify-between mb-4 gap-2">
+              <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={selectedCpfs.has(driver.cpf)}
+                  onChange={() => toggleSelect(driver.cpf)}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  aria-label={`Selecionar motorista ${driver.nome}`}
+                />
+              </label>
+              <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-lg">{driver.nome}</h3>
                 <p className="text-sm text-muted-foreground">CPF: {formatCPF(driver.cpf)}</p>
               </div>
@@ -136,10 +193,26 @@ export default function DriversList() {
             )}
 
             <div className="flex gap-2 mt-4">
-              <Button variant="outline" size="sm" className="flex-1 shadow-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 shadow-sm"
+                onClick={() => {
+                  setSelectedDriver(driver)
+                  setDetailsOpen(true)
+                }}
+              >
                 Detalhes
               </Button>
-              <Button variant="outline" size="sm" className="flex-1 shadow-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 shadow-sm"
+                onClick={() => {
+                  setDriverToEdit(driver)
+                  setIsDialogOpen(true)
+                }}
+              >
                 Editar
               </Button>
             </div>
@@ -152,6 +225,39 @@ export default function DriversList() {
           <p className="text-muted-foreground">Nenhum motorista encontrado</p>
         </div>
       )}
+
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          {selectedDriver && <DetalhesMotorista driver={selectedDriver} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir motorista{selectedCpfs.size > 1 ? 's' : ''}</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm pt-2">
+            {selectedCpfs.size === 1
+              ? 'Deseja realmente excluir este motorista? Esta ação não pode ser desfeita.'
+              : `Deseja realmente excluir ${selectedCpfs.size} motoristas? Esta ação não pode ser desfeita.`}
+          </p>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={deleteDriver.isPending}
+              onClick={confirmDelete}
+            >
+              {deleteDriver.isPending ? 'Excluindo...' : 'Sim, excluir'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

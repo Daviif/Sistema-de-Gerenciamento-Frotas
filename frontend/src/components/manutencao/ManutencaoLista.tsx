@@ -5,9 +5,11 @@ import { Plus, Wrench, Calendar, DollarSign, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import ManutencaoForm from './ManutencaoForm'
+import DetalhesManutencao from './DetalhesManutencao'
 import Loading from '@/components/ui/loading'
+import { useUpdateMaintenance } from '@/hooks/useManutencao'
 import { api } from '@/lib/api'
 import { Maintenance, MaintenanceType } from '@/types'
 import {
@@ -21,7 +23,11 @@ import {
 export default function MaintenanceList() {
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  
+  const [maintenanceToEdit, setMaintenanceToEdit] = useState<Maintenance | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [selectedMaintenance, setSelectedMaintenance] = useState<Maintenance | null>(null)
+  const updateMaintenance = useUpdateMaintenance()
+
   function handleTypeChange(value: string) {
     setTypeFilter(value === '__all__' ? '' : value)
   }
@@ -54,20 +60,26 @@ export default function MaintenanceList() {
             Gerencie as manutenções da frota
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              Nova Manutenção
-            </Button>
-          </DialogTrigger>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setMaintenanceToEdit(null) }}>
+          <Button size="sm" onClick={() => { setMaintenanceToEdit(null); setIsDialogOpen(true) }}>
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Nova Manutenção
+          </Button>
 
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nova Manutenção</DialogTitle>
+              <DialogTitle>{maintenanceToEdit ? 'Editar Manutenção' : 'Nova Manutenção'}</DialogTitle>
+              <DialogDescription className="sr-only">
+                Formulário para cadastro ou edição de manutenção
+              </DialogDescription>
             </DialogHeader>
 
-            <ManutencaoForm onSuccess={() => setIsDialogOpen(false)} onCancel={() => setIsDialogOpen(false)} />
+            <ManutencaoForm
+              key={maintenanceToEdit?.id_manutencao ?? 'new'}
+              initialData={maintenanceToEdit}
+              onSuccess={() => setIsDialogOpen(false)}
+              onCancel={() => setIsDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -156,16 +168,46 @@ export default function MaintenanceList() {
               )}
             </div>
 
-            {!maintenance.concluida && (
-              <div className="flex gap-2 mt-4">
-                <Button variant="default" size="sm" className="shadow-sm">
-                  Marcar como Concluída
-                </Button>
-                <Button variant="outline" size="sm" className="shadow-sm">
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="shadow-sm"
+                onClick={() => {
+                  setSelectedMaintenance(maintenance)
+                  setDetailsOpen(true)
+                }}
+              >
+                Detalhes
+              </Button>
+              {!maintenance.concluida && (
+                <>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    className="shadow-sm"
+                    disabled={updateMaintenance.isPending}
+                    onClick={() => updateMaintenance.mutate({ id: maintenance.id_manutencao, data: { concluida: true } })}
+                  >
+                    {updateMaintenance.isPending && updateMaintenance.variables?.id === maintenance.id_manutencao
+                      ? 'Salvando...'
+                      : 'Marcar como Concluída'}
+                  </Button>
+                  <Button
+                  variant="outline"
+                  size="sm"
+                  className="shadow-sm"
+                  onClick={() => {
+                    setMaintenanceToEdit(maintenance)
+                    setIsDialogOpen(true)
+                  }}
+                >
                   Editar
                 </Button>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </Card>
         ))}
       </div>
@@ -175,6 +217,14 @@ export default function MaintenanceList() {
           <p className="text-muted-foreground">Nenhuma manutenção encontrada</p>
         </div>
       )}
+
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          {selectedMaintenance && (
+            <DetalhesManutencao maintenance={selectedMaintenance} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

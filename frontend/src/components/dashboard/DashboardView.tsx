@@ -1,13 +1,23 @@
 // src/components/dashboard/DashboardView.tsx
 import { useMemo } from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
-import { AlertTriangle, CheckCircle, Clock, AlertOctagon, Truck, Users, LucideIcon } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart } from 'recharts'
+import { AlertTriangle, CheckCircle, Clock, AlertOctagon, Truck, Users, LucideIcon, Fuel, Wrench, DollarSign, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStats } from '@/hooks/useStats'
 import Loading from '@/components/ui/loading'
 import { useDrivers } from '@/hooks/useMotorista'
 import { useVehicles } from '@/hooks/useVeiculos'
 import { Driver, Vehicle, VehicleStatus } from '@/types'
+
+function formatCurrency(val: number): string {
+  if (val === undefined || val === null || isNaN(val)) return 'R$ 0'
+  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+function formatKm(val: number): string {
+  if (val === undefined || val === null || isNaN(val)) return '0'
+  return val.toLocaleString('pt-BR') + ' km'
+}
 
 interface StatCardProps {
   title: string
@@ -80,22 +90,66 @@ export default function DashboardView() {
         />
       </div>
 
+      {/* Estatísticas de Custos (dados cruzados) */}
+      {stats?.estatisticasGerais && (
+        <>
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-1">Estatísticas de Custos</h2>
+            <p className="text-sm text-muted-foreground">Custos operacionais dos últimos {stats.estatisticasGerais.periodo_meses} meses</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard
+              title="Custo Combustível"
+              value={formatCurrency(stats.estatisticasGerais.resumo.custo_total_combustivel)}
+              icon={Fuel}
+              color="blue"
+            />
+            <StatCard
+              title="Custo Manutenção"
+              value={formatCurrency(stats.estatisticasGerais.resumo.custo_total_manutencao)}
+              icon={Wrench}
+              color="amber"
+            />
+            <StatCard
+              title="Custo Total"
+              value={formatCurrency(stats.estatisticasGerais.resumo.custo_total_operacional)}
+              icon={DollarSign}
+              color="red"
+            />
+            <StatCard
+              title="KM Rodados"
+              value={formatKm(stats.estatisticasGerais.resumo.km_total)}
+              icon={TrendingUp}
+              color="green"
+            />
+            <StatCard
+              title="Custo por KM"
+              value={formatCurrency(stats.estatisticasGerais.resumo.custo_por_km)}
+              icon={DollarSign}
+              color="blue"
+            />
+          </div>
+        </>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Monthly Expenses Chart */}
+        {/* Monthly Expenses Chart - Combustível + Manutenção */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Custos Operacionais (Combustível & Manutenção)</CardTitle>
+            <p className="text-sm text-muted-foreground">Dados reais por mês</p>
           </CardHeader>
           <CardContent>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats?.monthlyExpenses || []}>
+                <ComposedChart data={stats?.estatisticasGerais?.por_mes?.length ? stats.estatisticasGerais.por_mes : (stats?.monthlyExpenses?.map(m => ({ mes_nome: m.name, combustivel: m.value, manutencao: 0, custo_total: m.value })) || [])}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <XAxis dataKey="mes_nome" />
+                  <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Bar dataKey="combustivel" name="Combustível" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="manutencao" name="Manutenção" fill="#f59e0b" stackId="a" radius={[4, 4, 0, 0]} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
@@ -155,12 +209,13 @@ export default function DashboardView() {
       {/* KM Traveled Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Total de KM Percorridos</CardTitle>
+          <CardTitle>KM Percorridos por Mês</CardTitle>
+          <p className="text-sm text-muted-foreground">Baseado em viagens finalizadas</p>
         </CardHeader>
         <CardContent>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats?.kmTraveled || []}>
+              <LineChart data={stats?.estatisticasGerais?.por_mes?.map(m => ({ name: m.mes_nome, value: m.km })) || stats?.kmTraveled || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />

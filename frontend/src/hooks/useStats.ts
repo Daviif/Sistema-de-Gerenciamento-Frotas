@@ -4,40 +4,26 @@ import { api } from '@/lib/api'
 import { DashboardStats, Driver } from '@/types'
 
 async function fetchStats(): Promise<DashboardStats> {
-  // Buscar dados de múltiplos endpoints
-  const [vehicles, drivers, trips, maintenance] = await Promise.all([
+  const [vehicles, drivers, trips, maintenance, estatisticas] = await Promise.all([
     api.get('/veiculos'),
     api.get('/motoristas'),
     api.get('/viagens/em-andamento'),
-    api.get('/manutencao/pendentes/lista')
+    api.get('/manutencao/pendentes/lista'),
+    api.get('/estatisticas/geral', { params: { meses: 6 } }).catch(() => ({ data: null }))
   ])
 
-  // Buscar estatísticas de viagens
+  const eg = estatisticas.data as DashboardStats['estatisticasGerais'] | null
+  const monthlyExpenses = eg?.por_mes?.map(m => ({ name: m.mes_nome, value: m.custo_total })) ?? []
+  const kmTraveled = eg?.por_mes?.map(m => ({ name: m.mes_nome, value: m.km })) ?? []
 
   return {
     totalVehicles: vehicles.data.length,
     activeDrivers: drivers.data.filter((d: Driver) => d.status === 'ativo').length,
     tripsInProgress: trips.data.length,
     maintenancePending: maintenance.data.length,
-    
-    // Mock data para gráficos - em produção, vir da API
-    monthlyExpenses: [
-      { name: 'Jan', value: 12000 },
-      { name: 'Fev', value: 15000 },
-      { name: 'Mar', value: 13500 },
-      { name: 'Abr', value: 18000 },
-      { name: 'Mai', value: 16000 },
-      { name: 'Jun', value: 19000 },
-    ],
-    
-    kmTraveled: [
-      { name: 'Jan', value: 45000 },
-      { name: 'Fev', value: 52000 },
-      { name: 'Mar', value: 48000 },
-      { name: 'Abr', value: 61000 },
-      { name: 'Mai', value: 55000 },
-      { name: 'Jun', value: 67000 },
-    ]
+    monthlyExpenses,
+    kmTraveled,
+    estatisticasGerais: eg ?? undefined,
   }
 }
 

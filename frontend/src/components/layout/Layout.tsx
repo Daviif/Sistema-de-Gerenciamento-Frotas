@@ -2,11 +2,13 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
-LayoutDashboard, 
+  LayoutDashboard, 
   Truck, 
   Users, 
   MapPin, 
   Wrench,
+  Fuel,
+  Map,
   X
 } from 'lucide-react'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
@@ -30,6 +32,8 @@ const navigation: NavigationItem[] = [
   { name: 'Motoristas', href: '/motoristas', icon: Users },
   { name: 'Viagens', href: '/viagens', icon: MapPin },
   { name: 'Manutenção', href: '/manutencao', icon: Wrench },
+  { name: 'Abastecimento', href: '/abastecimento', icon: Fuel },
+  { name: 'Cidades', href: '/cidades', icon: Map },
 ]
 
 export default function Layout({ children }: LayoutProps) {

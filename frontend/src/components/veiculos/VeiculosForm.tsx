@@ -1,20 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { useCreateVehicle } from '@/hooks/useVeiculos'
-import { NewVehicle } from '@/types'
+import { useCreateVehicle, useUpdateVehicle } from '@/hooks/useVeiculos'
+import { NewVehicle, Vehicle } from '@/types'
 
 type Props = {
   onSuccess?: () => void
   onCancel?: () => void
+  initialData?: Vehicle | null
 }
 
-export default function VeiculosForm({ onSuccess, onCancel }: Props) {
+export default function VeiculosForm({ onSuccess, onCancel, initialData }: Props) {
+  const isEdit = !!initialData
   const [form, setForm] = useState<Partial<NewVehicle>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const create = useCreateVehicle()
+  const updateMutation = useUpdateVehicle()
+
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        placa: initialData.placa,
+        marca: initialData.marca,
+        modelo: initialData.modelo,
+        ano: initialData.ano,
+        tipo: initialData.tipo,
+        km_atual: initialData.km_atual ?? undefined,
+        capacidade_tanque: initialData.capacidade_tanque ?? undefined,
+      })
+    } else {
+      setForm({})
+    }
+  }, [initialData])
 
   function update<K extends keyof NewVehicle>(key: K, value: NewVehicle[K] | undefined) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -81,7 +100,11 @@ export default function VeiculosForm({ onSuccess, onCancel }: Props) {
     }
 
     try {
-      await create.mutateAsync(payload)
+      if (isEdit && initialData) {
+        await updateMutation.mutateAsync({ id: initialData.id_veiculo, data: payload })
+      } else {
+        await create.mutateAsync(payload)
+      }
       setForm({})
       onSuccess?.()
     } catch {
@@ -89,7 +112,7 @@ export default function VeiculosForm({ onSuccess, onCancel }: Props) {
     }
   }
 
-  const creating = create.status === 'pending'
+  const creating = create.status === 'pending' || updateMutation.status === 'pending'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -97,7 +120,7 @@ export default function VeiculosForm({ onSuccess, onCancel }: Props) {
         <div className="grid grid-cols-1 gap-6">
           <div>
             <Label htmlFor="veiculo-placa" className="mb-2">Placa</Label>
-            <Input id="veiculo-placa" name="placa" autoFocus className="py-3" value={form.placa || ''} onChange={(e) => update('placa', e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))} required />
+            <Input id="veiculo-placa" name="placa" autoFocus className="py-3" value={form.placa || ''} onChange={(e) => update('placa', e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))} required readOnly={isEdit} />
             {errors.placa && <p className="text-danger text-sm mt-1">{errors.placa}</p>}
           </div>
 
@@ -139,7 +162,7 @@ export default function VeiculosForm({ onSuccess, onCancel }: Props) {
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="outline" type="button" onClick={() => onCancel?.()} size="sm">Cancelar</Button>
           <Button type="submit" disabled={creating} className="shadow-sm">
-            {creating ? 'Salvando...' : 'Salvar'}
+            {creating ? 'Salvando...' : isEdit ? 'Atualizar' : 'Salvar'}
           </Button>
         </div>
       </Card>

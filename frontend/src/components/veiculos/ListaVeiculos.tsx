@@ -1,13 +1,14 @@
 // src/components/veiculos/ListaVeiculos.tsx
 import { useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import VeiculosForm from './VeiculosForm'
+import DetalhesVeiculos from './DetalhesVeiculos'
 import Loading from '@/components/ui/loading'
-import { useVehicles } from '@/hooks/useVeiculos'
+import { useVehicles, useDeleteVehicle } from '@/hooks/useVeiculos'
 import { 
   Select,
   SelectContent,
@@ -21,8 +22,40 @@ export default function VehiclesList() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  
+  const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const { data: vehicles, isLoading } = useVehicles(statusFilter)
+  const deleteVehicle = useDeleteVehicle()
+
+  function toggleSelect(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function openDeleteConfirm() {
+    if (selectedIds.size === 0) return
+    setDeleteConfirmOpen(true)
+  }
+
+  async function confirmDelete() {
+    if (selectedIds.size === 0) return
+    for (const id of selectedIds) {
+      try {
+        await deleteVehicle.mutateAsync(id)
+      } catch {
+        // toast no hook
+      }
+    }
+    setSelectedIds(new Set())
+    setDeleteConfirmOpen(false)
+  }
 
   const q = searchTerm.toLowerCase()
   function handleStatusChange(value: string) {
@@ -58,23 +91,39 @@ export default function VehiclesList() {
             Gerencie a frota de veículos
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="default" size="sm">
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              Novo Veículo
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button variant="default" size="sm" onClick={() => { setVehicleToEdit(null); setIsDialogOpen(true) }}>
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Novo Veículo
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+            disabled={selectedIds.size === 0 || deleteVehicle.isPending}
+            onClick={openDeleteConfirm}
+          >
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
+            Deletar veículo{selectedIds.size > 1 ? 's' : ''}
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setVehicleToEdit(null) }}>
 
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo Veículo</DialogTitle>
+              <DialogTitle>{vehicleToEdit ? 'Editar Veículo' : 'Novo Veículo'}</DialogTitle>
             </DialogHeader>
 
-            <VeiculosForm onSuccess={() => setIsDialogOpen(false)} onCancel={() => setIsDialogOpen(false)} />
+            <VeiculosForm
+              initialData={vehicleToEdit}
+              onSuccess={() => setIsDialogOpen(false)}
+              onCancel={() => setIsDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Filters */}
       <Card className="p-6">
@@ -108,8 +157,17 @@ export default function VehiclesList() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredVehicles?.map((vehicle: Vehicle) => (
           <Card key={vehicle.id_veiculo} className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
+            <div className="flex items-start justify-between mb-4 gap-2">
+              <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(vehicle.id_veiculo)}
+                  onChange={() => toggleSelect(vehicle.id_veiculo)}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  aria-label={`Selecionar veículo ${vehicle.placa}`}
+                />
+              </label>
+              <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-lg">{vehicle.placa}</h3>
                 <p className="text-sm text-muted-foreground">{vehicle.modelo}</p>
               </div>
@@ -132,10 +190,25 @@ export default function VehiclesList() {
             </div>
 
             <div className="flex gap-2 mt-4">
-              <Button size="sm" className="flex-1 shadow-sm">
+              <Button
+                size="sm"
+                className="flex-1 shadow-sm"
+                onClick={() => {
+                  setSelectedVehicle(vehicle)
+                  setDetailsOpen(true)
+                }}
+              >
                 Detalhes
               </Button>
-              <Button variant="outline" size="sm" className="flex-1 border-primary/20 shadow-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 border-primary/20 shadow-sm"
+                onClick={() => {
+                  setVehicleToEdit(vehicle)
+                  setIsDialogOpen(true)
+                }}
+              >
                 Editar
               </Button>
             </div>
@@ -148,6 +221,39 @@ export default function VehiclesList() {
           <p className="text-muted-foreground">Nenhum veículo encontrado</p>
         </div>
       )}
+
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          {selectedVehicle && <DetalhesVeiculos vehicle={selectedVehicle} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir veículo{selectedIds.size > 1 ? 's' : ''}</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm pt-2">
+            {selectedIds.size === 1
+              ? 'Deseja realmente excluir este veículo? Esta ação não pode ser desfeita.'
+              : `Deseja realmente excluir ${selectedIds.size} veículos? Esta ação não pode ser desfeita.`}
+          </p>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={deleteVehicle.isPending}
+              onClick={confirmDelete}
+            >
+              {deleteVehicle.isPending ? 'Excluindo...' : 'Sim, excluir'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

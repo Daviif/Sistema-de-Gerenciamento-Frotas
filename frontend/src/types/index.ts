@@ -182,11 +182,36 @@ export interface DashboardStats {
   maintenancePending: number
   monthlyExpenses: ChartData[]
   kmTraveled: ChartData[]
+  estatisticasGerais?: EstatisticasGerais
 }
 
 export interface ChartData {
   name: string
   value: number
+}
+
+// Estatísticas gerais cruzadas (combustível, manutenção, viagens)
+export interface EstatisticasGerais {
+  periodo_meses: number
+  resumo: {
+    custo_total_combustivel: number
+    custo_total_manutencao: number
+    custo_total_operacional: number
+    km_total: number
+    custo_por_km: number
+    total_viagens: number
+    viagens_finalizadas: number
+    total_abastecimentos: number
+    total_manutencoes: number
+  }
+  por_mes: Array<{
+    mes: string
+    mes_nome: string
+    combustivel: number
+    manutencao: number
+    km: number
+    custo_total: number
+  }>
 }
 
 export interface AlertData {

@@ -1,23 +1,53 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { useCreateMaintenance } from '@/hooks/useManutencao'
+import { useCreateMaintenance, useUpdateMaintenance } from '@/hooks/useManutencao'
 import { useVehicles } from '@/hooks/useVeiculos'
-import { MaintenanceType, NewMaintenance } from '@/types'
+import { MaintenanceType, NewMaintenance, Maintenance } from '@/types'
+import { toast } from 'sonner'
 
-type Props = { onSuccess?: () => void; onCancel?: () => void }
+type Props = { onSuccess?: () => void; onCancel?: () => void; initialData?: Maintenance | null }
 
-export default function ManutencaoForm({ onSuccess, onCancel }: Props) {
-  const [form, setForm] = useState<Partial<NewMaintenance>>({ data_man: new Date().toISOString().slice(0, 10) })
+function getInitialForm(initialData: Maintenance | null | undefined): Partial<NewMaintenance> {
+  if (initialData) {
+    const dataMan = initialData.data_man
+    const dataManStr = typeof dataMan === 'string' ? dataMan.slice(0, 10) : new Date().toISOString().slice(0, 10)
+    return {
+      data_man: dataManStr,
+      tipo: initialData.tipo,
+      descricao: initialData.descricao,
+      valor: initialData.valor,
+      id_veiculo: initialData.id_veiculo,
+      km_manutencao: initialData.km_manutencao,
+      fornecedor: initialData.fornecedor,
+    }
+  }
+  return { data_man: new Date().toISOString().slice(0, 10) }
+}
+
+export default function ManutencaoForm({ onSuccess, onCancel, initialData }: Props) {
+  const isEdit = !!initialData
+  const [form, setForm] = useState<Partial<NewMaintenance>>(() => getInitialForm(initialData))
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const formRef = useRef<Partial<NewMaintenance>>(getInitialForm(initialData))
+
   const create = useCreateMaintenance()
+  const updateMutation = useUpdateMaintenance()
   const { data: vehicles } = useVehicles()
 
+  useEffect(() => {
+    const next = getInitialForm(initialData)
+    setForm(next)
+    formRef.current = next
+  }, [initialData])
+
   function update<K extends keyof NewMaintenance>(key: K, value: NewMaintenance[K] | undefined) {
-    setForm((prev) => ({ ...prev, [key]: value }))
+    const next = { ...formRef.current, [key]: value }
+    formRef.current = next
+    setForm(next)
   }
 
   function isValidDate(s?: string) {
@@ -30,43 +60,56 @@ export default function ManutencaoForm({ onSuccess, onCancel }: Props) {
     e.preventDefault()
     setErrors({})
 
-    const required = ['data_man', 'tipo', 'descricao', 'id_veiculo'] as Array<keyof NewMaintenance>
+    const formData = formRef.current
+
+    const required: Array<keyof NewMaintenance> = ['data_man', 'tipo', 'descricao', 'id_veiculo']
     const newErrors: Record<string, string> = {}
     for (const key of required) {
-      if (!form[key]) newErrors[key] = 'Campo obrigatório'
+      const val = formData[key]
+      if (val === undefined || val === null || val === '')
+        newErrors[key] = 'Campo obrigatório'
+      else if (key === 'id_veiculo' && !Number.isFinite(Number(val)))
+        newErrors[key] = 'Campo obrigatório'
     }
 
-    if (!isValidDate(String(form.data_man))) newErrors.data_man = 'Data inválida'
+    if (!isValidDate(String(formData.data_man))) newErrors.data_man = 'Data inválida'
 
-    if (form.valor !== undefined && form.valor !== null) {
-      const v = Number(form.valor)
+    if (formData.valor !== undefined && formData.valor !== null) {
+      const v = Number(formData.valor)
       if (!Number.isFinite(v) || v < 0) newErrors.valor = 'Valor deve ser >= 0'
     }
 
-    const vehicle = vehicles?.find((v) => v.id_veiculo === Number(form.id_veiculo))
-    if (form.km_manutencao !== undefined && form.km_manutencao !== null) {
-      const km = Number(form.km_manutencao)
+    const vehicle = vehicles?.find((v) => v.id_veiculo === Number(formData.id_veiculo))
+    if (formData.km_manutencao !== undefined && formData.km_manutencao !== null) {
+      const km = Number(formData.km_manutencao)
       if (!Number.isFinite(km) || km < 0) newErrors.km_manutencao = 'KM inválido'
       if (vehicle && km < (vehicle.km_atual ?? 0)) newErrors.km_manutencao = 'KM não pode ser menor que o atual do veículo'
     }
 
     if (Object.keys(newErrors).length) {
       setErrors(newErrors)
+      toast.error('Preencha os campos obrigatórios e corrija os erros.')
       return
     }
 
-    const payload: NewMaintenance = {
-      data_man: String(form.data_man),
-      tipo: form.tipo as MaintenanceType,
-      descricao: String(form.descricao),
-      valor: form.valor !== undefined ? Number(form.valor) : 0,
-      id_veiculo: Number(form.id_veiculo),
-      km_manutencao: form.km_manutencao !== undefined ? Number(form.km_manutencao) : undefined,
-      fornecedor: form.fornecedor ? String(form.fornecedor) : undefined,
+    const valorNum = formData.valor != null ? Number(formData.valor) : (isEdit ? undefined : 0)
+    const kmNum = formData.km_manutencao != null ? Number(formData.km_manutencao) : undefined
+    const basePayload = {
+      data_man: String(formData.data_man),
+      tipo: formData.tipo as MaintenanceType,
+      descricao: String(formData.descricao),
+      id_veiculo: Number(formData.id_veiculo),
+      km_manutencao: kmNum,
+      fornecedor: formData.fornecedor ? String(formData.fornecedor) : undefined,
     }
-
     try {
-      await create.mutateAsync(payload)
+      if (isEdit && initialData) {
+        const updateData = { ...basePayload, ...(valorNum != null ? { valor: valorNum } : {}) }
+        await updateMutation.mutateAsync({ id: initialData.id_manutencao, data: updateData })
+      } else {
+        const createData: NewMaintenance = { ...basePayload, valor: valorNum ?? 0 }
+        await create.mutateAsync(createData)
+      }
       setForm({ data_man: new Date().toISOString().slice(0, 10) })
       onSuccess?.()
     } catch {
@@ -74,7 +117,7 @@ export default function ManutencaoForm({ onSuccess, onCancel }: Props) {
     }
   }
 
-  const creating = create.status === 'pending'
+  const creating = create.status === 'pending' || updateMutation.status === 'pending'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -141,8 +184,13 @@ export default function ManutencaoForm({ onSuccess, onCancel }: Props) {
 
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="outline" type="button" onClick={() => onCancel?.()} size="sm">Cancelar</Button>
-          <Button type="submit" disabled={creating} className="shadow-sm">
-            {creating ? 'Salvando...' : 'Salvar'}
+          <Button
+            type="button"
+            disabled={creating}
+            className="shadow-sm"
+            onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>)}
+          >
+            {creating ? 'Salvando...' : isEdit ? 'Atualizar' : 'Salvar'}
           </Button>
         </div>
       </Card>

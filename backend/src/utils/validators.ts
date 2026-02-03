@@ -74,8 +74,8 @@ export function validarTipoVeiculo(tipo: string): string | null {
   const normalizar = (str: string) => 
   str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-  const tiposValidos = ['Caminhão', 'Caminhão-trator', 'Caminhonete', 'Camioneta', 'Micro-ônibus', 
-    'Motocicleta', 'Motoneta', 'Ônibus', 'Reboque', 'Semi-reboque', 'Utilitário', 'Basculante', 'Munck'
+  const tiposValidos = ['Caminhão', 'Caminhão-trator', 'Caminhonete', 'Camioneta', 'Micro-ônibus', 'Hatch',
+    'Motocicleta', 'Motoneta', 'Ônibus', 'Reboque', 'Semi-reboque', 'Utilitário', 'Basculante', 'Munck', 'Sedã'
   ];
 
   const busca = normalizar(tipo);

@@ -7,6 +7,7 @@ import abastecimentoRoutes from './routes/abastecimento.routes'
 import cidadeRoutes from './routes/cidade.routes'
 import motoristasRoutes from './routes/motoristas.routes'
 import manutencaoRoutes from './routes/manutencao.routes'
+import estatisticasRoutes from './routes/estatisticas.routes'
 
 const app = express()
 
@@ -36,6 +37,7 @@ app.use('/abastecimento', abastecimentoRoutes)
 app.use('/cidade', cidadeRoutes)
 app.use('/motoristas', motoristasRoutes)
 app.use('/manutencao', manutencaoRoutes)
+app.use('/estatisticas', estatisticasRoutes)
 
 // Rota 404
 app.use((req, res) => {
@@ -66,6 +68,7 @@ app.listen(PORT, () => {
   console.log('  • CRUD   /abastecimento')
   console.log('  • CRUD   /manutencao')
   console.log('  • CRUD   /cidade')
+  console.log('  • GET    /estatisticas/geral')
   console.log('')
 })
 

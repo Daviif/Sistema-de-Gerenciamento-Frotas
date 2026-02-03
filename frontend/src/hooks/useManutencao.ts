@@ -25,3 +25,22 @@ export function useCreateMaintenance() {
     },
   })
 }
+
+export function useUpdateMaintenance() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<NewMaintenance> & { concluida?: boolean } }) => {
+      const { data: result } = await api.put<Maintenance>(`/manutencao/${id}`, data)
+      return result
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all })
+      toast.success('Manutenção atualizada com sucesso!')
+    },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Erro ao atualizar manutenção'
+      toast.error(message)
+    },
+  })
+}

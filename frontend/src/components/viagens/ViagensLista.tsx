@@ -1,14 +1,18 @@
 // src/components/viagens/ViagensLista.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, MapPin, Calendar, User, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import ViagemForm from './ViagemForm'
+import DetalhesViagem from './DetalhesViagem'
 import Loading from '@/components/ui/loading'
+import { useUpdateTripObservations, useFinalizeTrip, useCancelTrip } from '@/hooks/useViagem'
 import { Trip, TripStatus } from '@/types'
 import {
   Select,
@@ -21,7 +25,35 @@ import {
 export default function TripsList() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
+  const [editObservacoesOpen, setEditObservacoesOpen] = useState(false)
+  const [tripToEditObservacoes, setTripToEditObservacoes] = useState<Trip | null>(null)
+  const [observacoesText, setObservacoesText] = useState('')
+  const updateObservacoes = useUpdateTripObservations()
+  const finalizeTrip = useFinalizeTrip()
+  const cancelTrip = useCancelTrip()
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [tripToCancel, setTripToCancel] = useState<Trip | null>(null)
+  const [cancelMotivo, setCancelMotivo] = useState('')
+
+  useEffect(() => {
+    if (tripToEditObservacoes) {
+      setObservacoesText(tripToEditObservacoes.observacoes ?? '')
+    }
+  }, [tripToEditObservacoes])
+
+  async function handleSaveObservacoes() {
+    if (!tripToEditObservacoes) return
+    try {
+      await updateObservacoes.mutateAsync({ id: tripToEditObservacoes.id_viagem, observacoes: observacoesText })
+      setEditObservacoesOpen(false)
+      setTripToEditObservacoes(null)
+    } catch {
+      // toast no hook
+    }
+  }
+
   function handleStatusChange(value: string) {
     setStatusFilter(value === '__all__' ? '' : value)
   }
@@ -55,12 +87,10 @@ export default function TripsList() {
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              Nova Viagem
-            </Button>
-          </DialogTrigger>
+          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Nova Viagem
+          </Button>
 
           <DialogContent>
             <DialogHeader>
@@ -159,16 +189,63 @@ export default function TripsList() {
               </div>
             )}
 
-            {trip.status_viagem === TripStatus.IN_PROGRESS && (
-              <div className="flex gap-2 mt-4">
-                <Button variant="default" size="sm" className="shadow-sm">
-                  Finalizar Viagem
-                </Button>
-                <Button variant="outline" size="sm" className="shadow-sm">
-                  Cancelar
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="shadow-sm"
+                onClick={() => {
+                  setSelectedTrip(trip)
+                  setDetailsOpen(true)
+                }}
+              >
+                Detalhes
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shadow-sm"
+                onClick={() => {
+                  setTripToEditObservacoes(trip)
+                  setEditObservacoesOpen(true)
+                }}
+              >
+                Editar
+              </Button>
+              {trip.status_viagem === TripStatus.IN_PROGRESS && (
+                <>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    className="shadow-sm"
+                    disabled={finalizeTrip.isPending}
+                    onClick={() => finalizeTrip.mutate(trip.id_viagem)}
+                  >
+                    {finalizeTrip.isPending && finalizeTrip.variables === trip.id_viagem
+                      ? 'Finalizando...'
+                      : 'Finalizar Viagem'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shadow-sm"
+                    disabled={cancelTrip.isPending}
+                    onClick={() => {
+                      setTripToCancel(trip)
+                      setCancelMotivo('')
+                      setCancelDialogOpen(true)
+                    }}
+                  >
+                    {cancelTrip.isPending && cancelTrip.variables?.idViagem === trip.id_viagem
+                      ? 'Cancelando...'
+                      : 'Cancelar'}
+                  </Button>
+                </>
+              )}
+            </div>
           </Card>
         ))}
       </div>
@@ -178,6 +255,99 @@ export default function TripsList() {
           <p className="text-muted-foreground">Nenhuma viagem encontrada</p>
         </div>
       )}
+
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          {selectedTrip && <DetalhesViagem trip={selectedTrip} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editObservacoesOpen} onOpenChange={(open) => { setEditObservacoesOpen(open); if (!open) setTripToEditObservacoes(null) }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar observações</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <Label htmlFor="observacoes-viagem">Observações</Label>
+              <Textarea
+                id="observacoes-viagem"
+                className="mt-2 min-h-[120px]"
+                value={observacoesText}
+                onChange={(e) => setObservacoesText(e.target.value)}
+                placeholder="Observações da viagem..."
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setEditObservacoesOpen(false)}>
+                Cancelar
+              </Button>
+              <Button size="sm" disabled={updateObservacoes.status === 'pending'} onClick={handleSaveObservacoes}>
+                {updateObservacoes.status === 'pending' ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={cancelDialogOpen}
+        onOpenChange={(open) => {
+          setCancelDialogOpen(open)
+          if (!open) {
+            setTripToCancel(null)
+            setCancelMotivo('')
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancelar viagem</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Tem certeza que deseja cancelar esta viagem? O veículo e o motorista ficarão disponíveis.
+            </p>
+            <div>
+              <Label htmlFor="cancel-motivo">Motivo (opcional)</Label>
+              <Textarea
+                id="cancel-motivo"
+                className="mt-2 min-h-[80px]"
+                value={cancelMotivo}
+                onChange={(e) => setCancelMotivo(e.target.value)}
+                placeholder="Ex.: Cliente desistiu, alteração de rota..."
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setCancelDialogOpen(false)}>
+                Não
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                disabled={cancelTrip.isPending}
+                onClick={async () => {
+                  if (!tripToCancel) return
+                  try {
+                    await cancelTrip.mutateAsync({
+                      idViagem: tripToCancel.id_viagem,
+                      motivo: cancelMotivo.trim() || undefined,
+                    })
+                    setCancelDialogOpen(false)
+                    setTripToCancel(null)
+                    setCancelMotivo('')
+                  } catch {
+                    // toast no hook
+                  }
+                }}
+              >
+                {cancelTrip.isPending ? 'Cancelando...' : 'Sim, cancelar'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
