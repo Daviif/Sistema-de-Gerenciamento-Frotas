@@ -1,6 +1,6 @@
 // src/components/dashboard/DashboardView.tsx
-import { useMemo } from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart } from 'recharts'
+import { useMemo } from 'react' 
+import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart } from 'recharts'
 import { AlertTriangle, CheckCircle, Clock, AlertOctagon, Truck, Users, LucideIcon, Fuel, Wrench, DollarSign, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStats } from '@/hooks/useStats'

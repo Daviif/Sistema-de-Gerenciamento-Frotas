@@ -9,7 +9,8 @@ import {
   Wrench,
   Fuel,
   Map,
-  X
+  X,
+  NotepadText
 } from 'lucide-react'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,7 @@ const navigation: NavigationItem[] = [
   { name: 'Manutenção', href: '/manutencao', icon: Wrench },
   { name: 'Abastecimento', href: '/abastecimento', icon: Fuel },
   { name: 'Cidades', href: '/cidades', icon: Map },
+  { name: 'Relatorios', href: '/relatorios', icon: NotepadText}
 ]
 
 export default function Layout({ children }: LayoutProps) {

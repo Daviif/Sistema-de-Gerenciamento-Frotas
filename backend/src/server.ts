@@ -8,6 +8,7 @@ import cidadeRoutes from './routes/cidade.routes'
 import motoristasRoutes from './routes/motoristas.routes'
 import manutencaoRoutes from './routes/manutencao.routes'
 import estatisticasRoutes from './routes/estatisticas.routes'
+import relatoriosRoutes from './routes/relatorios.routes'
 
 const app = express()
 
@@ -38,6 +39,7 @@ app.use('/cidade', cidadeRoutes)
 app.use('/motoristas', motoristasRoutes)
 app.use('/manutencao', manutencaoRoutes)
 app.use('/estatisticas', estatisticasRoutes)
+app.use('/relatorios', relatoriosRoutes)
 
 // Rota 404
 app.use((req, res) => {
@@ -54,10 +56,10 @@ const PORT = process.env.PORT || 3001
 
 app.listen(PORT, () => {
   console.log('╔════════════════════════════════════════╗')
-  console.log('║   🚛 GERENCIADOR DE FROTA - API       ║')
+  console.log('║   🚛 GERENCIADOR DE FROTA - API        ║')
   console.log('╠════════════════════════════════════════╣')
-  console.log(`║   Servidor: http://localhost:${PORT}     ║`)
-  console.log(`║   Status: ✅ Rodando                    ║`)
+  console.log(`║   Servidor: http://localhost:${PORT}   ║`)
+  console.log(`║   Status: ✅ Rodando                   ║`)
   console.log('╚════════════════════════════════════════╝')
   console.log('')
   console.log('📋 Rotas disponíveis:')
@@ -69,6 +71,7 @@ app.listen(PORT, () => {
   console.log('  • CRUD   /manutencao')
   console.log('  • CRUD   /cidade')
   console.log('  • GET    /estatisticas/geral')
+  console.log('  • GET    /relatorios/*')
   console.log('')
 })
 

@@ -12,6 +12,7 @@ import TripsList from '@/components/viagens/ViagensLista'
 import MaintenanceList from '@/components/manutencao/ManutencaoLista'
 import AbastecimentoLista from '@/components/abastecimento/AbastecimentoLista'
 import CidadeLista from '@/components/cidade/CidadeLista'
+import Relatorio from '@/components/relatorio/RelatorioView'
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/manutencao" element={<MaintenanceList />} />
             <Route path="/abastecimento" element={<AbastecimentoLista />} />
             <Route path="/cidades" element={<CidadeLista />} />
+            <Route path='/relatorios' element={<Relatorio />} />
           </Routes>
         </Layout>
       </BrowserRouter>
