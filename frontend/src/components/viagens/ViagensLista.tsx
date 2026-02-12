@@ -227,6 +227,10 @@ export default function TripsList() {
                       ? 'Finalizando...'
                       : 'Finalizar Viagem'}
                   </Button>
+                </>
+              )}
+              {(trip.status_viagem === TripStatus.IN_PROGRESS || trip.status_viagem === TripStatus.PLANNED) && (
+                <>
                   <Button
                     type="button"
                     variant="outline"

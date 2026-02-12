@@ -189,7 +189,7 @@ router.get('/motoristas-completo', asyncHandler(async (req: Request, res: Respon
       -- Rotas diferentes
       COUNT(DISTINCT CONCAT(v.cidade_origem::text, '-', v.cidade_destino::text)) as rotas_diferentes,
       -- Horas (será calculado em JavaScript)
-      array_agg(CASE WHEN v.data_chegada IS NOT NULL AND v.status_viagem = 'finalizada' THEN EXTRACT(EPOCH FROM (v.data_chegada - v.data_saida)) / 3600 ELSE NULL END) as horas_array
+      array_agg(CASE WHEN v.data_chegada IS NOT NULL AND v.status_viagem = 'finalizada' THEN ROUND(EXTRACT(EPOCH FROM (v.data_chegada::timestamp - v.data_saida::timestamp))::numeric / 3600, 2) ELSE NULL END) as horas_array
      FROM motorista m
      LEFT JOIN viagem v ON v.cpf_motorista = m.cpf
        AND v.data_saida >= CURRENT_DATE - ($1::text || ' months')::interval
@@ -441,7 +441,7 @@ router.get('/rotas-analise', asyncHandler(async (req: Request, res: Response) =>
       COALESCE(SUM(CASE WHEN v.km_final IS NOT NULL THEN v.km_final - v.km_inicial ELSE 0 END), 0) as km_total,
       COALESCE(AVG(CASE WHEN v.km_final IS NOT NULL THEN v.km_final - v.km_inicial ELSE NULL END), 0) as km_medio,
       -- Tempo médio de viagem (será calculado em JavaScript)
-      array_agg(CASE WHEN v.data_chegada IS NOT NULL AND v.status_viagem = 'finalizada' THEN EXTRACT(EPOCH FROM (v.data_chegada - v.data_saida)) / 3600 ELSE NULL END) as horas_array,
+      array_agg(CASE WHEN v.data_chegada IS NOT NULL AND v.status_viagem = 'finalizada' THEN ROUND(EXTRACT(EPOCH FROM (v.data_chegada::timestamp - v.data_saida::timestamp))::numeric / 3600, 2) ELSE NULL END) as horas_array,
       -- Veículos diferentes nesta rota
       COUNT(DISTINCT v.id_veiculo) as veiculos_diferentes,
       -- Motoristas diferentes nesta rota

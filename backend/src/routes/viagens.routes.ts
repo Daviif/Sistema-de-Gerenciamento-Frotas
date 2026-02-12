@@ -165,7 +165,7 @@ router.post('/finalizar/:idViagem', asyncHandler(async (req: Request, res: Respo
 // ✅ POST /viagens/cancelar/:id - Cancelar viagem
 router.post('/cancelar/:idViagem', asyncHandler(async (req: Request, res: Response) => {
   const { idViagem } = req.params
-  const { motivo } = req.body
+  const { motivo } = (req.body ?? {}) as { motivo?: string }
   
   const viagem = await cancelarViagem(Number(idViagem), motivo)
   
