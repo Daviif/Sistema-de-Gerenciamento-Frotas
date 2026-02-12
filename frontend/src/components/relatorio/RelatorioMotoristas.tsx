@@ -6,7 +6,8 @@ import Loading from '@/components/ui/loading'
 import { useRelatorioMotoristasCompleto } from '@/hooks/useRelatorios'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 
-function formatNumber(val: number): string {
+function formatNumber(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 

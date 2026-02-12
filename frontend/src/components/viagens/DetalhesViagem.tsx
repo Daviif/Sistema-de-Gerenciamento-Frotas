@@ -74,7 +74,7 @@ export default function DetalhesViagem({ trip }: DetalhesViagemProps) {
           {trip.km_rodados != null && (
             <div>
               <dt className="text-muted-foreground">KM rodados</dt>
-              <dd className="font-medium">{trip.km_rodados.toLocaleString('pt-BR')} km</dd>
+              <dd className="font-medium">{trip.km_rodados !== undefined && trip.km_rodados !== null ? `${Number(trip.km_rodados).toLocaleString('pt-BR')} km` : '-'}</dd>
             </div>
           )}
           {trip.observacoes && (

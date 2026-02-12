@@ -146,7 +146,7 @@ export default function DashboardView() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="mes_nome" />
                   <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip formatter={(value: number | undefined) => (value !== undefined) ? formatCurrency(value) : '-'} />
                   <Bar dataKey="combustivel" name="Combustível" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
                   <Bar dataKey="manutencao" name="Manutenção" fill="#f59e0b" stackId="a" radius={[4, 4, 0, 0]} />
                 </ComposedChart>

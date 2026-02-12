@@ -5,7 +5,8 @@ import Loading from '@/components/ui/loading'
 import { useRelatorioManutencaoCritica } from '@/hooks/useRelatorios'
 import { AlertTriangle } from 'lucide-react'
 
-function formatCurrency(val: number): string {
+function formatCurrency(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
 }
 
@@ -33,8 +34,6 @@ export default function RelatorioManutencao({ meses }: Props) {
   }
 
   const criticos = manutencoes.filter(m => m.status_alerta === 'critico')
-  const atencao = manutencoes.filter(m => m.status_alerta === 'atencao')
-  const ok = manutencoes.filter(m => m.status_alerta === 'ok')
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -113,7 +112,7 @@ export default function RelatorioManutencao({ meses }: Props) {
                     <TableCell className="text-center text-danger">{veiculo.manutencoes_corretivas}</TableCell>
                     <TableCell className="text-right">{formatCurrency(veiculo.custo_total)}</TableCell>
                     <TableCell className="text-right">{veiculo.dias_desde_ultima}</TableCell>
-                    <TableCell className="text-right">{veiculo.km_desde_ultima.toLocaleString('pt-BR')} km</TableCell>
+                    <TableCell className="text-right">{veiculo.km_desde_ultima !== undefined && veiculo.km_desde_ultima !== null ? `${veiculo.km_desde_ultima.toLocaleString('pt-BR')} km` : '-'}</TableCell>
                     <TableCell className="text-center">
                       <Badge className={getStatusColor(veiculo.status_alerta)}>
                         {veiculo.status_alerta === 'critico' ? 'Crítico' : veiculo.status_alerta === 'atencao' ? 'Atenção' : 'OK'}

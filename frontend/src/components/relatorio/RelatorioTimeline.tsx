@@ -4,7 +4,8 @@ import Loading from '@/components/ui/loading'
 import { useRelatorioTimeline } from '@/hooks/useRelatorios'
 import { MapPin, Fuel, Wrench, Calendar } from 'lucide-react'
 
-function formatCurrency(val: number): string {
+function formatCurrency(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
 }
 
@@ -31,7 +32,8 @@ export default function RelatorioTimeline({ meses }: Props) {
     )
   }
 
-  const getEventoIcon = (tipo: string) => {
+  const getEventoIcon = (tipo: string | undefined | null) => {
+    if (!tipo) return <Calendar className="w-5 h-5 text-muted-foreground" />
     switch (tipo.toLowerCase()) {
       case 'viagem':
         return <MapPin className="w-5 h-5 text-primary" />
@@ -44,7 +46,8 @@ export default function RelatorioTimeline({ meses }: Props) {
     }
   }
 
-  const getEventoColor = (tipo: string) => {
+  const getEventoColor = (tipo: string | undefined | null) => {
+    if (!tipo) return 'border-l-muted'
     switch (tipo.toLowerCase()) {
       case 'viagem':
         return 'border-l-primary'
@@ -99,7 +102,7 @@ export default function RelatorioTimeline({ meses }: Props) {
                         <p className="font-semibold text-lg">{formatCurrency(evento.valor)}</p>
                       )}
                       {evento.km !== undefined && evento.km !== null && (
-                        <p className="text-sm text-muted-foreground">{evento.km.toLocaleString('pt-BR')} km</p>
+                        <p className="text-sm text-muted-foreground">{Number(evento.km).toLocaleString('pt-BR')} km</p>
                       )}
                     </div>
                   </div>

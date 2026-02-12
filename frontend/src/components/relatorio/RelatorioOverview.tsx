@@ -4,11 +4,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import Loading from '@/components/ui/loading'
 import { useRelatorioOverview } from '@/hooks/useRelatorios'
 
-function formatCurrency(val: number): string {
+function formatCurrency(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
-function formatNumber(val: number): string {
+function formatNumber(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR')
 }
 
@@ -192,7 +194,7 @@ interface StatCardProps {
   suffix?: string
 }
 
-function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, color, suffix }: StatCardProps) {
   const colorClasses = {
     blue: 'bg-primary/10 text-primary',
     green: 'status-success',
@@ -208,7 +210,7 @@ function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
         </div>
         <div>
           <p className="text-sm text-muted-foreground">{label}</p>
-          <h4 className="text-2xl font-bold text-foreground">{value}</h4>
+          <h4 className="text-2xl font-bold text-foreground">{value}{suffix ? ` ${suffix}` : ''}</h4>
         </div>
       </CardContent>
     </Card>

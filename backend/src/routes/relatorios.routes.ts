@@ -41,27 +41,47 @@ router.get('/overview', asyncHandler(async (req: Request, res: Response) => {
   const custoTotal = parseFloat(custos.rows[0].combustivel) + parseFloat(custos.rows[0].manutencao)
   const kmTotal = parseInt(viagens.rows[0].km_total, 10)
 
+  // Dados de veículos em viagem e manutenção
+  const veiculosStatus = await pool.query(
+    `SELECT 
+      COUNT(CASE WHEN status = 'em_viagem' THEN 1 END) as em_viagem,
+      COUNT(CASE WHEN status = 'manutencao' THEN 1 END) as manutencao
+     FROM veiculo`
+  )
+
+  // Dados de motoristas em viagem
+  const motoristasStatus = await pool.query(
+    `SELECT 
+      COALESCE((SELECT COUNT(DISTINCT cpf_motorista) FROM viagem WHERE status_viagem = 'em_andamento'), 0) as em_viagem`
+  )
+
   res.json({
     periodo_meses: meses,
     frota: {
       total_veiculos: parseInt(veiculos.rows[0].total, 10),
       veiculos_ativos: parseInt(veiculos.rows[0].ativos, 10),
+      veiculos_em_viagem: parseInt(veiculosStatus.rows[0].em_viagem, 10),
+      veiculos_manutencao: parseInt(veiculosStatus.rows[0].manutencao, 10)
+    },
+    motoristas: {
       total_motoristas: parseInt(motoristas.rows[0].total, 10),
       motoristas_ativos: parseInt(motoristas.rows[0].ativos, 10),
-      total_cidades: parseInt(cidades.rows[0].total, 10)
+      motoristas_em_viagem: parseInt(motoristasStatus.rows[0].em_viagem, 10)
     },
     viagens: {
-      total: parseInt(viagens.rows[0].total, 10),
-      em_andamento: parseInt(viagens.rows[0].em_andamento, 10),
-      finalizadas: parseInt(viagens.rows[0].finalizadas, 10),
-      canceladas: parseInt(viagens.rows[0].canceladas, 10),
-      km_total: kmTotal
+      total_viagens: parseInt(viagens.rows[0].total, 10),
+      viagens_em_andamento: parseInt(viagens.rows[0].em_andamento, 10),
+      viagens_finalizadas: parseInt(viagens.rows[0].finalizadas, 10),
+      viagens_canceladas: parseInt(viagens.rows[0].canceladas, 10),
+      km_total_percorrido: kmTotal
+    },
+    cidades: {
+      total_cidades: parseInt(cidades.rows[0].total, 10)
     },
     custos: {
-      combustivel: parseFloat(custos.rows[0].combustivel),
-      manutencao: parseFloat(custos.rows[0].manutencao),
-      total: custoTotal,
-      custo_por_km: kmTotal > 0 ? custoTotal / kmTotal : 0
+      custo_total_combustivel: parseFloat(custos.rows[0].combustivel),
+      custo_total_manutencao: parseFloat(custos.rows[0].manutencao),
+      custo_operacional_total: custoTotal
     }
   })
 }))
@@ -105,16 +125,31 @@ router.get('/frota-completo', asyncHandler(async (req: Request, res: Response) =
   )
 
   const veiculos = frotaDetalhada.rows.map(v => {
-    const custoTotal = parseFloat(v.custo_combustivel) + parseFloat(v.custo_manutencao)
-    const kmViagens = parseInt(v.km_viagens, 10)
-    const totalLitros = parseFloat(v.total_litros)
+    const custoTotal = Number(v.custo_combustivel) + Number(v.custo_manutencao)
+    const kmRodados = Number(v.km_viagens)
+    const totalLitros = Number(v.total_litros)
+    const totalAbastecimentos = Number(v.total_abastecimentos)
 
     return {
-      ...v,
+      id_veiculo: v.id_veiculo,
+      placa: v.placa,
+      marca: v.marca,
+      modelo: v.modelo,
+      ano: v.ano,
+      tipo: v.tipo,
+      km_atual: v.km_atual,
+      status: v.status,
+      capacidade_tanque: v.capacidade_tanque,
+      total_viagens: Number(v.total_viagens),
+      total_abastecimentos: totalAbastecimentos,
+      total_litros: totalLitros,
+      custo_combustivel: Number(v.custo_combustivel),
+      custo_manutencao: Number(v.custo_manutencao),
+      km_rodados: kmRodados,
       custo_total: custoTotal,
-      custo_por_km: kmViagens > 0 ? custoTotal / kmViagens : 0,
-      consumo_medio: kmViagens > 0 && totalLitros > 0 ? kmViagens / totalLitros : 0,
-      km_por_abastecimento: parseInt(v.total_abastecimentos, 10) > 0 ? kmViagens / parseInt(v.total_abastecimentos, 10) : 0
+      custo_por_km: kmRodados > 0 ? custoTotal / kmRodados : 0,
+      consumo_medio_km_l: kmRodados > 0 && totalLitros > 0 ? kmRodados / totalLitros : 0,
+      km_por_abastecimento: totalAbastecimentos > 0 ? kmRodados / totalAbastecimentos : 0
     }
   })
 
@@ -123,7 +158,7 @@ router.get('/frota-completo', asyncHandler(async (req: Request, res: Response) =
     veiculos,
     totalizadores: {
       total_veiculos: veiculos.length,
-      km_total: veiculos.reduce((acc, v) => acc + parseInt(v.km_viagens, 10), 0),
+      km_total: veiculos.reduce((acc, v) => acc + v.km_rodados, 0),
       custo_total: veiculos.reduce((acc, v) => acc + v.custo_total, 0),
       total_viagens: veiculos.reduce((acc, v) => acc + parseInt(v.total_viagens, 10), 0)
     }
@@ -148,13 +183,13 @@ router.get('/motoristas-completo', asyncHandler(async (req: Request, res: Respon
       COUNT(DISTINCT CASE WHEN v.status_viagem = 'cancelada' THEN v.id_viagem END) as viagens_canceladas,
       COALESCE(SUM(CASE WHEN v.km_final IS NOT NULL THEN v.km_final - v.km_inicial ELSE 0 END), 0) as km_total,
       -- Média de KM por viagem
-      COALESCE(AVG(CASE WHEN v.km_final IS NOT NULL THEN v.km_final - v.km_inicial END), 0) as km_media_viagem,
-      -- Tempo médio de viagem (em horas)
-      COALESCE(AVG(EXTRACT(EPOCH FROM (v.data_chegada - v.data_saida)) / 3600), 0) as horas_media_viagem,
+      COALESCE(AVG(CASE WHEN v.km_final IS NOT NULL THEN v.km_final - v.km_inicial ELSE NULL END), 0) as km_media_viagem,
       -- Veículos diferentes utilizados
       COUNT(DISTINCT v.id_veiculo) as veiculos_utilizados,
       -- Rotas diferentes
-      COUNT(DISTINCT CONCAT(v.cidade_origem, '-', v.cidade_destino)) as rotas_diferentes
+      COUNT(DISTINCT CONCAT(v.cidade_origem::text, '-', v.cidade_destino::text)) as rotas_diferentes,
+      -- Horas (será calculado em JavaScript)
+      array_agg(CASE WHEN v.data_chegada IS NOT NULL AND v.status_viagem = 'finalizada' THEN EXTRACT(EPOCH FROM (v.data_chegada - v.data_saida)) / 3600 ELSE NULL END) as horas_array
      FROM motorista m
      LEFT JOIN viagem v ON v.cpf_motorista = m.cpf
        AND v.data_saida >= CURRENT_DATE - ($1::text || ' months')::interval
@@ -163,22 +198,43 @@ router.get('/motoristas-completo', asyncHandler(async (req: Request, res: Respon
     [meses]
   )
 
-  const motoristas = motoristasDetalhado.rows.map(m => ({
-    ...m,
-    taxa_conclusao: parseInt(m.total_viagens, 10) > 0
-      ? (parseInt(m.viagens_finalizadas, 10) / parseInt(m.total_viagens, 10)) * 100
-      : 0,
-    cnh_vencida: new Date(m.validade_cnh) < new Date()
-  }))
+  const motoristas = motoristasDetalhado.rows.map(m => {
+    const validadeCnh = new Date(m.validade_cnh)
+    const agora = new Date()
+    const diasParaVencer = Math.ceil((validadeCnh.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Calcular média de horas a partir do array
+    const horasValidas = (m.horas_array || []).filter(h => h !== null && h !== undefined)
+    const horasMediaViagem = horasValidas.length > 0 
+      ? horasValidas.reduce((a, b) => a + b, 0) / horasValidas.length 
+      : 0
+    
+    return {
+      cpf: m.cpf,
+      nome: m.nome,
+      validade_cnh: m.validade_cnh,
+      total_viagens: parseInt(m.total_viagens, 10),
+      viagens_finalizadas: parseInt(m.viagens_finalizadas, 10),
+      viagens_canceladas: parseInt(m.viagens_canceladas, 10),
+      km_rodados: parseInt(m.km_total, 10),
+      veiculos_diferentes: parseInt(m.veiculos_utilizados, 10),
+      rotas_diferentes: parseInt(m.rotas_diferentes, 10),
+      horas_media_viagem: horasMediaViagem,
+      taxa_conclusao: parseInt(m.total_viagens, 10) > 0
+        ? (parseInt(m.viagens_finalizadas, 10) / parseInt(m.total_viagens, 10)) * 100
+        : 0,
+      cnh_vencida: validadeCnh < agora,
+      dias_para_vencer_cnh: diasParaVencer
+    }
+  })
 
   res.json({
     periodo_meses: meses,
     motoristas,
     totalizadores: {
       total_motoristas: motoristas.length,
-      motoristas_ativos: motoristas.filter(m => m.status === 'ativo').length,
-      km_total: motoristas.reduce((acc, m) => acc + parseFloat(m.km_total), 0),
-      total_viagens: motoristas.reduce((acc, m) => acc + parseInt(m.total_viagens, 10), 0),
+      km_total: motoristas.reduce((acc, m) => acc + m.km_rodados, 0),
+      total_viagens: motoristas.reduce((acc, m) => acc + m.total_viagens, 0),
       cnh_vencidas: motoristas.filter(m => m.cnh_vencida).length
     }
   })
@@ -226,45 +282,51 @@ router.get('/eficiencia-combustivel', asyncHandler(async (req: Request, res: Res
   const params = tipo_combustivel ? [meses, tipo_combustivel] : [meses]
   const result = await pool.query(query, params)
 
-  const veiculos = result.rows.map(v => {
-    const kmRodados = parseFloat(v.km_rodados)
-    const totalLitros = parseFloat(v.total_litros)
-    const custoTotal = parseFloat(v.custo_total)
+  const veiculosProcessados = result.rows.map(v => {
+    const kmRodados = Number(v.km_rodados) || 0
+    const totalLitros = Number(v.total_litros) || 0
+    const custoTotal = Number(v.custo_total) || 0
+    const consumoMedio = totalLitros > 0 ? kmRodados / totalLitros : 0
 
-    return {
-      ...v,
-      consumo_medio: totalLitros > 0 ? kmRodados / totalLitros : 0, // km/L
-      custo_por_km: kmRodados > 0 ? custoTotal / kmRodados : 0,
-      litros_por_100km: kmRodados > 0 ? (totalLitros / kmRodados) * 100 : 0,
-      eficiencia: totalLitros > 0 && kmRodados > 0 ? 'bom' : 'sem_dados'
-    }
-  })
-
-  // Classificar eficiência
-  const veiculosComEficiencia = veiculos.map(v => {
     let classificacao = 'sem_dados'
-    if (v.consumo_medio > 0) {
-      if (v.consumo_medio >= 10) classificacao = 'excelente'
-      else if (v.consumo_medio >= 8) classificacao = 'bom'
-      else if (v.consumo_medio >= 6) classificacao = 'regular'
+    if (consumoMedio > 0) {
+      if (consumoMedio >= 10) classificacao = 'excelente'
+      else if (consumoMedio >= 8) classificacao = 'bom'
+      else if (consumoMedio >= 6) classificacao = 'regular'
       else classificacao = 'ruim'
     }
-    return { ...v, eficiencia: classificacao }
+
+    return {
+      id_veiculo: v.id_veiculo,
+      placa: v.placa,
+      modelo: v.modelo,
+      marca: v.marca,
+      tipo: v.tipo,
+      total_abastecimentos: Number(v.total_abastecimentos) || 0,
+      total_litros: totalLitros,
+      custo_total: custoTotal,
+      consumo_medio_km_l: consumoMedio,
+      custo_por_km: kmRodados > 0 ? custoTotal / kmRodados : 0,
+      litros_por_100km: kmRodados > 0 ? (totalLitros / kmRodados) * 100 : 0,
+      preco_medio_litro: Number(v.preco_medio_litro) || 0,
+      combustivel_principal: v.combustivel_principal || 'Não informado',
+      classificacao
+    }
   })
 
   res.json({
     periodo_meses: meses,
     tipo_combustivel: tipo_combustivel || 'todos',
-    veiculos: veiculosComEficiencia,
+    veiculos: veiculosProcessados,
     estatisticas: {
-      consumo_medio_geral: veiculos.length > 0
-        ? veiculos.reduce((acc, v) => acc + v.consumo_medio, 0) / veiculos.length
+      consumo_medio_geral: veiculosProcessados.length > 0
+        ? veiculosProcessados.reduce((acc, v) => acc + v.consumo_medio_km_l, 0) / veiculosProcessados.length
         : 0,
-      custo_medio_por_km: veiculos.length > 0
-        ? veiculos.reduce((acc, v) => acc + v.custo_por_km, 0) / veiculos.length
+      custo_medio_por_km: veiculosProcessados.length > 0
+        ? veiculosProcessados.reduce((acc, v) => acc + v.custo_por_km, 0) / veiculosProcessados.length
         : 0,
-      total_litros: veiculos.reduce((acc, v) => acc + parseFloat(v.total_litros), 0),
-      total_gasto: veiculos.reduce((acc, v) => acc + parseFloat(v.custo_total), 0)
+      total_litros: veiculosProcessados.reduce((acc, v) => acc + v.total_litros, 0),
+      total_gasto: veiculosProcessados.reduce((acc, v) => acc + v.custo_total, 0)
     }
   })
 }))
@@ -289,8 +351,8 @@ router.get('/manutencao-critica', asyncHandler(async (req: Request, res: Respons
       COUNT(CASE WHEN NOT m.concluida THEN 1 END) as pendentes,
       COALESCE(SUM(CASE WHEN m.concluida THEN m.valor ELSE 0 END), 0) as custo_total,
       COALESCE(AVG(m.valor), 0) as custo_medio,
-      -- Tempo médio entre manutenções (dias)
-      COALESCE(AVG(EXTRACT(EPOCH FROM (m.data_man - LAG(m.data_man) OVER (PARTITION BY v.id_veiculo ORDER BY m.data_man))) / 86400), 0) as dias_entre_manutencoes,
+      -- Últimas datas (será calculado em JavaScript)
+      array_agg(m.data_man ORDER BY m.data_man DESC) as datas_manutencoes,
       -- Última manutenção
       MAX(m.data_man) as ultima_manutencao
      FROM veiculo v
@@ -335,10 +397,23 @@ router.get('/manutencao-critica', asyncHandler(async (req: Request, res: Respons
       const diasDesdeUltima = v.ultima_manutencao
         ? Math.floor((Date.now() - new Date(v.ultima_manutencao).getTime()) / (1000 * 60 * 60 * 24))
         : null
+      
+      // Calcular dias entre manutenções a partir do array de datas
+      let diasEntreManutencoes = 0
+      const datas = (v.datas_manutencoes || []).filter(d => d !== null && d !== undefined)
+      if (datas.length > 1) {
+        let totalDias = 0
+        for (let i = 0; i < datas.length - 1; i++) {
+          const diff = Math.floor((new Date(datas[i]).getTime() - new Date(datas[i + 1]).getTime()) / (1000 * 60 * 60 * 24))
+          totalDias += diff
+        }
+        diasEntreManutencoes = totalDias / (datas.length - 1)
+      }
 
       return {
         ...v,
         dias_desde_ultima_manutencao: diasDesdeUltima,
+        dias_entre_manutencoes: diasEntreManutencoes,
         necessita_atencao: diasDesdeUltima && diasDesdeUltima > 90 || parseInt(v.pendentes, 10) > 0
       }
     }),
@@ -364,9 +439,9 @@ router.get('/rotas-analise', asyncHandler(async (req: Request, res: Response) =>
       COUNT(CASE WHEN v.status_viagem = 'finalizada' THEN 1 END) as finalizadas,
       COUNT(CASE WHEN v.status_viagem = 'cancelada' THEN 1 END) as canceladas,
       COALESCE(SUM(CASE WHEN v.km_final IS NOT NULL THEN v.km_final - v.km_inicial ELSE 0 END), 0) as km_total,
-      COALESCE(AVG(CASE WHEN v.km_final IS NOT NULL THEN v.km_final - v.km_inicial END), 0) as km_medio,
-      -- Tempo médio de viagem
-      COALESCE(AVG(EXTRACT(EPOCH FROM (v.data_chegada - v.data_saida)) / 3600), 0) as horas_medias,
+      COALESCE(AVG(CASE WHEN v.km_final IS NOT NULL THEN v.km_final - v.km_inicial ELSE NULL END), 0) as km_medio,
+      -- Tempo médio de viagem (será calculado em JavaScript)
+      array_agg(CASE WHEN v.data_chegada IS NOT NULL AND v.status_viagem = 'finalizada' THEN EXTRACT(EPOCH FROM (v.data_chegada - v.data_saida)) / 3600 ELSE NULL END) as horas_array,
       -- Veículos diferentes nesta rota
       COUNT(DISTINCT v.id_veiculo) as veiculos_diferentes,
       -- Motoristas diferentes nesta rota
@@ -381,13 +456,31 @@ router.get('/rotas-analise', asyncHandler(async (req: Request, res: Response) =>
     [meses, limit]
   )
 
-  const rotas = rotasDetalhadas.rows.map(r => ({
-    ...r,
-    taxa_sucesso: parseInt(r.total_viagens, 10) > 0
-      ? (parseInt(r.finalizadas, 10) / parseInt(r.total_viagens, 10)) * 100
-      : 0,
-    popularidade: 'alta' // Pode ser classificado baseado no total
-  }))
+  const rotas = rotasDetalhadas.rows.map(r => {
+    const totalViagens = Number(r.total_viagens) || 0
+    const finalizadas = Number(r.finalizadas) || 0
+    
+    // Calcular média de horas a partir do array
+    const horasValidas = (r.horas_array || []).filter(h => h !== null && h !== undefined)
+    const horasMedias = horasValidas.length > 0 
+      ? horasValidas.reduce((a, b) => a + b, 0) / horasValidas.length 
+      : 0
+    
+    return {
+      origem: r.origem,
+      destino: r.destino,
+      total_viagens: totalViagens,
+      finalizadas,
+      canceladas: Number(r.canceladas) || 0,
+      km_total: Number(r.km_total) || 0,
+      km_medio: Number(r.km_medio) || 0,
+      horas_medias: horasMedias,
+      veiculos_diferentes: Number(r.veiculos_diferentes) || 0,
+      motoristas_diferentes: Number(r.motoristas_diferentes) || 0,
+      taxa_sucesso: totalViagens > 0 ? (finalizadas / totalViagens) * 100 : 0,
+      popularidade: 'alta'
+    }
+  })
 
   // Cidades mais utilizadas
   const cidadesOrigem = await pool.query(
@@ -423,8 +516,8 @@ router.get('/rotas-analise', asyncHandler(async (req: Request, res: Response) =>
     cidades_destino_populares: cidadesDestino.rows,
     estatisticas: {
       total_rotas_diferentes: rotas.length,
-      km_total: rotas.reduce((acc, r) => acc + parseFloat(r.km_total), 0),
-      viagens_total: rotas.reduce((acc, r) => acc + parseInt(r.total_viagens, 10), 0)
+      km_total: rotas.reduce((acc, r) => acc + r.km_total, 0),
+      viagens_total: rotas.reduce((acc, r) => acc + r.total_viagens, 0)
     }
   })
 }))

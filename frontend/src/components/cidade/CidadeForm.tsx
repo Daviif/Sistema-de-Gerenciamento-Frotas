@@ -52,7 +52,8 @@ export default function CidadeForm({ onSuccess, onCancel, initialData }: Props) 
 
     if (Object.keys(newErrors).length) {
       setErrors(newErrors)
-      toast.error('Preencha os campos obrigatórios e corrija os erros.')
+      const camposFaltantes = Object.keys(newErrors).join(', ')
+      toast.error(`Erros encontrados: ${camposFaltantes}`)
       return
     }
 

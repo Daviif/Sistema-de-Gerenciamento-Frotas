@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge'
 import Loading from '@/components/ui/loading'
 import { useRelatorioCustoBeneficio } from '@/hooks/useRelatorios'
 
-function formatCurrency(val: number): string {
+function formatCurrency(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
 }
 
@@ -34,7 +35,8 @@ export default function RelatorioCustoBeneficio({ meses }: Props) {
   const maisEficientes = [...veiculos].sort((a, b) => a.custo_por_km - b.custo_por_km).slice(0, 3)
   const subutilizados = veiculos.filter(v => v.taxa_utilizacao < 30)
 
-  const getEficienciaColor = (eficiencia: string) => {
+  const getEficienciaColor = (eficiencia: string | undefined | null) => {
+    if (!eficiencia) return 'bg-muted text-muted-foreground'
     switch (eficiencia.toLowerCase()) {
       case 'excelente':
         return 'status-success'
@@ -122,7 +124,7 @@ export default function RelatorioCustoBeneficio({ meses }: Props) {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">{formatCurrency(veiculo.custo_operacional)}</TableCell>
-                    <TableCell className="text-right">{veiculo.km_rodados.toLocaleString('pt-BR')} km</TableCell>
+                    <TableCell className="text-right">{veiculo.km_rodados !== undefined && veiculo.km_rodados !== null ? `${veiculo.km_rodados.toLocaleString('pt-BR')} km` : '-'}</TableCell>
                     <TableCell className="text-right">
                       <span className={veiculo.custo_por_km > 2 ? 'text-danger' : veiculo.custo_por_km > 1 ? 'text-warning' : 'text-success'}>
                         {formatCurrency(veiculo.custo_por_km)}

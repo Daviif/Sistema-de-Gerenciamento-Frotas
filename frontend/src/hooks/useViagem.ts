@@ -57,6 +57,8 @@ export function useFinalizeTrip() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['drivers'] })
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] })
       toast.success('Viagem finalizada com sucesso!')
     },
     onError: (error: unknown) => {
@@ -79,6 +81,8 @@ export function useCancelTrip() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['drivers'] })
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] })
       toast.success('Viagem cancelada com sucesso!')
     },
     onError: (error: unknown) => {

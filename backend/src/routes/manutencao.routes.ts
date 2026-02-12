@@ -124,8 +124,8 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
     if (!validarValorPositivo(km_manutencao)) {
       throw new AppError('Quilometragem deve ser positiva')
     }
-    if (km_manutencao < veiculo.km_atual) {
-      throw new AppError('Quilometragem da manutenção não pode ser menor que a atual do veículo')
+    if (km_manutencao > veiculo.km_atual) {
+      throw new AppError('Quilometragem da manutenção não pode ser maior que a atual do veículo')
     }
   }
 
@@ -155,12 +155,28 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
     // colocar veículo em manutenção
     const dataMan = new Date(data_man)
     const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
     
     if (dataMan >= hoje && veiculo.status !== 'em_viagem') {
       await client.query(
         'UPDATE veiculo SET status = $1 WHERE id_veiculo = $2',
         ['manutencao', id_veiculo]
       )
+    }
+
+    // Também marcar como manutenção se há manutenções pendentes (mesmo do passado)
+    if (veiculo.status !== 'em_viagem' && veiculo.status !== 'manutencao') {
+      const manutencoesTotal = await client.query(
+        'SELECT COUNT(*) as total FROM manutencao WHERE id_veiculo = $1 AND concluida = false',
+        [id_veiculo]
+      )
+      
+      if (parseInt(manutencoesTotal.rows[0].total, 10) > 0) {
+        await client.query(
+          'UPDATE veiculo SET status = $1 WHERE id_veiculo = $2',
+          ['manutencao', id_veiculo]
+        )
+      }
     }
 
     await client.query('COMMIT')
@@ -235,12 +251,20 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
       [data_man, tipo, descricao, valor, km_manutencao, fornecedor, concluida, id]
     )
 
-    // Se marcou como concluída, voltar veículo para ativo
+    // Se marcou como concluída, verificar se há outras manutenções pendentes
     if (concluida === true && manutExiste.rows[0].status === 'manutencao') {
-      await client.query(
-        'UPDATE veiculo SET status = $1 WHERE id_veiculo = $2',
-        ['ativo', manutExiste.rows[0].id_veiculo]
+      const outrasManutencoes = await client.query(
+        'SELECT COUNT(*) as total FROM manutencao WHERE id_veiculo = $1 AND id_manutencao != $2 AND concluida = false',
+        [manutExiste.rows[0].id_veiculo, id]
       )
+      
+      // Se não há outras manutenções pendentes, voltar para ativo
+      if (parseInt(outrasManutencoes.rows[0].total, 10) === 0) {
+        await client.query(
+          'UPDATE veiculo SET status = $1 WHERE id_veiculo = $2',
+          ['ativo', manutExiste.rows[0].id_veiculo]
+        )
+      }
     }
 
     await client.query('COMMIT')
@@ -268,9 +292,47 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('Manutenção não encontrada', 404)
   }
 
-  await pool.query('DELETE FROM manutencao WHERE id_manutencao = $1', [id])
-  
-  res.json({ message: 'Manutenção excluída com sucesso' })
+  const client = await pool.connect()
+
+  try {
+    await client.query('BEGIN')
+
+    const id_veiculo = manutExiste.rows[0].id_veiculo
+
+    // Deletar manutenção
+    await client.query('DELETE FROM manutencao WHERE id_manutencao = $1', [id])
+
+    // Verificar se há outras manutenções pendentes
+    const veiculoStatus = await client.query(
+      'SELECT status FROM veiculo WHERE id_veiculo = $1',
+      [id_veiculo]
+    )
+
+    if (veiculoStatus.rows[0].status === 'manutencao') {
+      const outrasManutencoes = await client.query(
+        'SELECT COUNT(*) as total FROM manutencao WHERE id_veiculo = $1 AND concluida = false',
+        [id_veiculo]
+      )
+
+      // Se não há mais manutenções pendentes, voltar para ativo
+      if (parseInt(outrasManutencoes.rows[0].total, 10) === 0) {
+        await client.query(
+          'UPDATE veiculo SET status = $1 WHERE id_veiculo = $2',
+          ['ativo', id_veiculo]
+        )
+      }
+    }
+
+    await client.query('COMMIT')
+
+    res.json({ message: 'Manutenção excluída com sucesso' })
+
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
 }))
 
 // ✅ GET /manutencao/veiculo/:id/estatisticas - Estatísticas de manutenção

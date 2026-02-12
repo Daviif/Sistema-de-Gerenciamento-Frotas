@@ -6,7 +6,8 @@ import Loading from '@/components/ui/loading'
 import { useRelatorioComparativoMensal } from '@/hooks/useRelatorios'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
-function formatCurrency(val: number): string {
+function formatCurrency(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
@@ -33,7 +34,8 @@ export default function RelatorioComparativo({ meses }: Props) {
     )
   }
 
-  const getTendenciaIcon = (tendencia: string) => {
+  const getTendenciaIcon = (tendencia: string | undefined | null) => {
+    if (!tendencia) return <Minus className="w-4 h-4 text-muted-foreground" />
     switch (tendencia.toLowerCase()) {
       case 'crescimento':
         return <TrendingUp className="w-4 h-4 text-success" />
@@ -44,7 +46,8 @@ export default function RelatorioComparativo({ meses }: Props) {
     }
   }
 
-  const getTendenciaColor = (tendencia: string) => {
+  const getTendenciaColor = (tendencia: string | undefined | null) => {
+    if (!tendencia) return 'bg-muted text-muted-foreground'
     switch (tendencia.toLowerCase()) {
       case 'crescimento':
         return 'status-success'
@@ -81,8 +84,8 @@ export default function RelatorioComparativo({ meses }: Props) {
                 <YAxis yAxisId="left" tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip 
-                  formatter={(value: number, name: string) => {
-                    if (name === 'Viagens' || name === 'KM') return value.toLocaleString('pt-BR')
+                  formatter={(value: any, name?: string) => {
+                    if (name === 'Viagens' || name === 'KM') return value !== undefined && value !== null ? Number(value).toLocaleString('pt-BR') : '-'
                     return formatCurrency(value)
                   }}
                 />
@@ -130,7 +133,7 @@ export default function RelatorioComparativo({ meses }: Props) {
                         </Badge>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">{mes.km_rodados.toLocaleString('pt-BR')} km</TableCell>
+                    <TableCell className="text-right">{mes.km_rodados !== undefined && mes.km_rodados !== null ? `${mes.km_rodados.toLocaleString('pt-BR')} km` : '-'}</TableCell>
                     <TableCell className="text-right">{formatCurrency(mes.custo_combustivel)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(mes.custo_manutencao)}</TableCell>
                     <TableCell className="text-right font-semibold">{formatCurrency(mes.custo_total)}</TableCell>

@@ -80,7 +80,7 @@ export default function ManutencaoForm({ onSuccess, onCancel, initialData }: Pro
     }
 
     const vehicle = vehicles?.find((v) => v.id_veiculo === Number(formData.id_veiculo))
-    if (formData.km_manutencao !== undefined && formData.km_manutencao !== null) {
+    if (formData.km_manutencao !== undefined && formData.km_manutencao !== null && formData.km_manutencao !== '') {
       const km = Number(formData.km_manutencao)
       if (!Number.isFinite(km) || km < 0) newErrors.km_manutencao = 'KM inválido'
       if (vehicle && km < (vehicle.km_atual ?? 0)) newErrors.km_manutencao = 'KM não pode ser menor que o atual do veículo'
@@ -88,7 +88,8 @@ export default function ManutencaoForm({ onSuccess, onCancel, initialData }: Pro
 
     if (Object.keys(newErrors).length) {
       setErrors(newErrors)
-      toast.error('Preencha os campos obrigatórios e corrija os erros.')
+      const camposFaltantes = Object.keys(newErrors).join(', ')
+      toast.error(`Erros encontrados: ${camposFaltantes}`)
       return
     }
 
@@ -173,7 +174,7 @@ export default function ManutencaoForm({ onSuccess, onCancel, initialData }: Pro
 
           <div>
             <Label htmlFor="manutencao-km" className="mb-2">KM Manutenção</Label>
-            <Input id="manutencao-km" name="km_manutencao" className="py-3" type="number" value={form.km_manutencao ?? ''} onChange={(e) => update('km_manutencao', e.target.value ? Number(e.target.value) : undefined)} />
+            <Input id="manutencao-km" name="km_manutencao" className="py-3" type="number" value={form.km_manutencao ?? ''} onChange={(e) => update('km_manutencao', e.target.value !== '' ? Number(e.target.value) : undefined)} />
           </div>
 
           <div>

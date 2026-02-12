@@ -5,11 +5,13 @@ import Loading from '@/components/ui/loading'
 import { useRelatorioFrotaCompleto } from '@/hooks/useRelatorios'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
-function formatCurrency(val: number): string {
+function formatCurrency(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
 }
 
-function formatNumber(val: number): string {
+function formatNumber(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 

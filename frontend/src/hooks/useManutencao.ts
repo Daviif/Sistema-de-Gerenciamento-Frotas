@@ -17,6 +17,7 @@ export function useCreateMaintenance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] })
       toast.success('Manutenção cadastrada com sucesso!')
     },
     onError: (error: unknown) => {
@@ -36,6 +37,7 @@ export function useUpdateMaintenance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] })
       toast.success('Manutenção atualizada com sucesso!')
     },
     onError: (error: unknown) => {

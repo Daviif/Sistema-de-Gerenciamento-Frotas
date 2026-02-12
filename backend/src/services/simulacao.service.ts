@@ -96,6 +96,7 @@ export async function finalizarViagem(idViagem: number) {
         data_chegada = NOW(),
         status_viagem = $2
       WHERE id_viagem = $3
+      RETURNING *
       `,
       [kmFinal, STATUS_VIAGEM.FINALIZADA, idViagem]
     )

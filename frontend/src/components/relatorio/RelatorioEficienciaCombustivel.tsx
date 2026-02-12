@@ -8,11 +8,13 @@ import Loading from '@/components/ui/loading'
 import { useRelatorioEficienciaCombustivel } from '@/hooks/useRelatorios'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
-function formatCurrency(val: number): string {
+function formatCurrency(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
 }
 
-function formatNumber(val: number): string {
+function formatNumber(val: number | null | undefined): string {
+  if (val === undefined || val === null) return '-'
   return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
@@ -30,8 +32,8 @@ const FUEL_LABELS: Record<string, string> = {
 }
 
 export default function RelatorioEficienciaCombustivel({ meses }: Props) {
-  const [tipoCombustivel, setTipoCombustivel] = useState<string>('')
-  const { data: eficiencia, isLoading } = useRelatorioEficienciaCombustivel(meses, tipoCombustivel)
+  const [tipoCombustivel, setTipoCombustivel] = useState<string>('all')
+  const { data: eficiencia, isLoading } = useRelatorioEficienciaCombustivel(meses, tipoCombustivel === 'all' ? undefined : tipoCombustivel)
 
   if (isLoading) {
     return (
@@ -49,7 +51,8 @@ export default function RelatorioEficienciaCombustivel({ meses }: Props) {
     )
   }
 
-  const getClassificacaoColor = (classificacao: string) => {
+  const getClassificacaoColor = (classificacao: string | undefined | null) => {
+    if (!classificacao) return 'bg-muted text-muted-foreground'
     switch (classificacao.toLowerCase()) {
       case 'excelente':
         return 'status-success'
@@ -84,7 +87,7 @@ export default function RelatorioEficienciaCombustivel({ meses }: Props) {
                 <SelectValue placeholder="Todos os tipos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {FUEL_TYPES.map((tipo) => (
                   <SelectItem key={tipo} value={tipo}>
                     {FUEL_LABELS[tipo]}

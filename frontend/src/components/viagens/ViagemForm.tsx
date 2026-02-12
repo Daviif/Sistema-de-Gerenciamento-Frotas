@@ -8,6 +8,7 @@ import { useVehicles } from '@/hooks/useVeiculos'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { NewTrip, City } from '@/types'
+import { toast } from 'sonner'
 
 type Props = { onSuccess?: () => void; onCancel?: () => void }
 
@@ -34,13 +35,20 @@ export default function ViagemForm({ onSuccess, onCancel }: Props) {
     e.preventDefault()
     setErrors({})
 
+    const newErrors: Record<string, string> = {}
+
     if (!form.id_veiculo) {
-      setErrors({ id_veiculo: 'Veículo obrigatório' })
-      return
+      newErrors.id_veiculo = 'Veículo obrigatório'
     }
 
     if (form.cidade_origem && form.cidade_destino && Number(form.cidade_origem) === Number(form.cidade_destino)) {
-      setErrors({ cidade_destino: 'Cidade destino deve ser diferente da origem' })
+      newErrors.cidade_destino = 'Cidade destino deve ser diferente da origem'
+    }
+
+    if (Object.keys(newErrors).length) {
+      setErrors(newErrors)
+      const camposFaltantes = Object.keys(newErrors).join(', ')
+      toast.error(`Erros encontrados: ${camposFaltantes}`)
       return
     }
 
@@ -89,7 +97,7 @@ export default function ViagemForm({ onSuccess, onCancel }: Props) {
 
           <div>
             <label htmlFor="viagem-motorista" className="text-sm font-medium mb-2 block">Motorista (opcional)</label>
-            <Select value={form.cpf_motorista || ''} onValueChange={(v) => update('cpf_motorista', v)}>
+            <Select value={form.cpf_motorista || 'none'} onValueChange={(v) => update('cpf_motorista', v === 'none' ? undefined : v)}>
               <SelectTrigger id="viagem-motorista" className="py-3">
                 <SelectValue placeholder="Selecione o motorista" />
               </SelectTrigger>
@@ -103,7 +111,7 @@ export default function ViagemForm({ onSuccess, onCancel }: Props) {
 
           <div>
             <label htmlFor="viagem-origem" className="text-sm font-medium mb-2 block">Cidade Origem (opcional)</label>
-            <Select value={String(form.cidade_origem || '')} onValueChange={(v) => update('cidade_origem', Number(v))}>
+            <Select value={String(form.cidade_origem || 'none')} onValueChange={(v) => update('cidade_origem', v === 'none' ? undefined : Number(v))}>
               <SelectTrigger id="viagem-origem" className="py-3">
                 <SelectValue placeholder="Selecione a cidade de origem" />
               </SelectTrigger>
@@ -117,7 +125,7 @@ export default function ViagemForm({ onSuccess, onCancel }: Props) {
 
           <div>
             <label htmlFor="viagem-destino" className="text-sm font-medium mb-2 block">Cidade Destino (opcional)</label>
-            <Select value={String(form.cidade_destino || '')} onValueChange={(v) => update('cidade_destino', Number(v))}>
+            <Select value={String(form.cidade_destino || 'none')} onValueChange={(v) => update('cidade_destino', v === 'none' ? undefined : Number(v))}>
               <SelectTrigger id="viagem-destino" className="py-3">
                 <SelectValue placeholder="Selecione a cidade destino" />
               </SelectTrigger>
@@ -127,6 +135,7 @@ export default function ViagemForm({ onSuccess, onCancel }: Props) {
                 ))}
               </SelectContent>
             </Select>
+            {errors.cidade_destino && <p className="text-danger text-sm mt-1">{errors.cidade_destino}</p>}
           </div>
         </div>
 

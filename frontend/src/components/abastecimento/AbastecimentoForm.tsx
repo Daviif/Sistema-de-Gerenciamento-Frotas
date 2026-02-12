@@ -91,7 +91,8 @@ export default function AbastecimentoForm({ onSuccess, onCancel, initialData }: 
 
     if (Object.keys(newErrors).length) {
       setErrors(newErrors)
-      toast.error('Preencha os campos obrigatórios e corrija os erros.')
+      const camposFaltantes = Object.keys(newErrors).join(', ')
+      toast.error(`Erros encontrados: ${camposFaltantes}`)
       return
     }
 
@@ -131,7 +132,7 @@ export default function AbastecimentoForm({ onSuccess, onCancel, initialData }: 
 
           <div>
             <Label htmlFor="abast-tipo" className="mb-2">Tipo de Combustível</Label>
-            <Select value={form.tipo_combustivel || ''} onValueChange={(v) => update('tipo_combustivel', v)}>
+            <Select value={form.tipo_combustivel || 'gasolina'} onValueChange={(v) => update('tipo_combustivel', v)}>
               <SelectTrigger id="abast-tipo" className="py-3">
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
