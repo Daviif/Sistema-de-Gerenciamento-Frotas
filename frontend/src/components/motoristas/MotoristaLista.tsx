@@ -1,6 +1,6 @@
 // src/components/motoristas/MotoristaLista.tsx
 import { useState } from 'react'
-import { Plus, Search, Calendar, Trash2 } from 'lucide-react'
+import { Plus, Search, Calendar, Trash2, Power } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import MotoristaForm from './MotoristaForm'
 import DetalhesMotorista from './DetalhesMotorista'
 import Loading from '@/components/ui/loading'
-import { useDrivers, useDeleteDriver } from '@/hooks/useMotorista'
+import { useDrivers, useDeleteDriver, useReactivateDriver } from '@/hooks/useMotorista'
 import { 
   Select,
   SelectContent,
@@ -29,6 +29,7 @@ export default function DriversList() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const { data: drivers, isLoading } = useDrivers(statusFilter)
   const deleteDriver = useDeleteDriver()
+  const reactivateDriver = useReactivateDriver()
 
   function toggleSelect(cpf: string) {
     setSelectedCpfs((prev) => {
@@ -55,6 +56,14 @@ export default function DriversList() {
     }
     setSelectedCpfs(new Set())
     setDeleteConfirmOpen(false)
+  }
+
+  async function handleReactivate(cpf: string) {
+    try {
+      await reactivateDriver.mutateAsync(cpf)
+    } catch {
+      // toast no hook
+    }
   }
 
   function handleStatusChange(value: string) {
@@ -216,6 +225,19 @@ export default function DriversList() {
                 Editar
               </Button>
             </div>
+
+            {driver.status === DriverStatus.INACTIVE && (
+              <Button
+                type="button"
+                size="sm"
+                className="w-full mt-2"
+                disabled={reactivateDriver.isPending}
+                onClick={() => handleReactivate(driver.cpf)}
+              >
+                <Power className="w-4 h-4" aria-hidden="true" />
+                Ativar novamente
+              </Button>
+            )}
           </Card>
         ))}
       </div>
@@ -239,8 +261,8 @@ export default function DriversList() {
           </DialogHeader>
           <p className="text-muted-foreground text-sm pt-2">
             {selectedCpfs.size === 1
-              ? 'Deseja realmente excluir este motorista? Esta ação não pode ser desfeita.'
-              : `Deseja realmente excluir ${selectedCpfs.size} motoristas? Esta ação não pode ser desfeita.`}
+              ? 'Deseja realmente excluir este motorista? Se houver histórico de viagens, ele será apenas inativado.'
+              : `Deseja realmente excluir ${selectedCpfs.size} motoristas? Se houver histórico de viagens, eles serão apenas inativados.`}
           </p>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" size="sm" onClick={() => setDeleteConfirmOpen(false)}>

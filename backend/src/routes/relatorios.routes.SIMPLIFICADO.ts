@@ -8,6 +8,7 @@ const MESES_NOMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Se
 
 /**
  * GET /relatorios/overview - Visão geral do sistema
+ * SIMPLIFICADO: Usa múltiplas queries simples ao invés de uma query complexa
  */
 router.get('/overview', asyncHandler(async (req: Request, res: Response) => {
   const { meses = 6 } = req.query
@@ -105,8 +106,9 @@ router.get('/overview', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * GET /relatorios/veiculos - Relatório detalhado de veículos
+ * SIMPLIFICADO: Busca dados de cada veículo com queries simples
  */
-router.get('/frota-completo', asyncHandler(async (req: Request, res: Response) => {
+router.get('/veiculos', asyncHandler(async (req: Request, res: Response) => {
   const { meses = 6 } = req.query
 
   // 1. Buscar todos os veículos
@@ -157,7 +159,7 @@ router.get('/frota-completo', asyncHandler(async (req: Request, res: Response) =
     )
 
     // Calcular totais
-    const custoCombustivel = parseFloat(combustivel.rows[0].total || 0)
+    const custoCombus tivel = parseFloat(combustivel.rows[0].total || 0)
     const custoManutencao = parseFloat(manutencao.rows[0].total || 0)
     const kmTotal = parseFloat(kmRodados.rows[0].total || 0)
     const custoTotal = custoCombustivel + custoManutencao
@@ -181,8 +183,9 @@ router.get('/frota-completo', asyncHandler(async (req: Request, res: Response) =
 
 /**
  * GET /relatorios/motoristas - Relatório detalhado de motoristas
+ * SIMPLIFICADO: Uma query por dado necessário
  */
-router.get('/motoristas-completo', asyncHandler(async (req: Request, res: Response) => {
+router.get('/motoristas', asyncHandler(async (req: Request, res: Response) => {
   const { meses = 6 } = req.query
 
   // 1. Buscar todos os motoristas
@@ -244,8 +247,9 @@ router.get('/motoristas-completo', asyncHandler(async (req: Request, res: Respon
 
 /**
  * GET /relatorios/combustivel - Relatório de combustível
+ * SIMPLIFICADO: Queries mais simples
  */
-router.get('/eficiencia-combustivel', asyncHandler(async (req: Request, res: Response) => {
+router.get('/combustivel', asyncHandler(async (req: Request, res: Response) => {
   const { meses = 6 } = req.query
 
   // 1. Buscar veículos
@@ -307,8 +311,9 @@ router.get('/eficiencia-combustivel', asyncHandler(async (req: Request, res: Res
 
 /**
  * GET /relatorios/manutencao - Relatório de manutenção
+ * SIMPLIFICADO: Query direta por veículo
  */
-router.get('/manutencao-critica', asyncHandler(async (req: Request, res: Response) => {
+router.get('/manutencao', asyncHandler(async (req: Request, res: Response) => {
   const { meses = 12 } = req.query
 
   // 1. Buscar veículos
@@ -362,8 +367,9 @@ router.get('/manutencao-critica', asyncHandler(async (req: Request, res: Respons
 
 /**
  * GET /relatorios/rotas - Relatório de rotas mais utilizadas
+ * SIMPLIFICADO: Query básica com JOIN e GROUP BY
  */
-router.get('/rotas-analise', asyncHandler(async (req: Request, res: Response) => {
+router.get('/rotas', asyncHandler(async (req: Request, res: Response) => {
   const { meses = 6 } = req.query
 
   // Query com JOIN básico e GROUP BY
@@ -395,8 +401,9 @@ router.get('/rotas-analise', asyncHandler(async (req: Request, res: Response) =>
 
 /**
  * GET /relatorios/mensal - Comparativo mensal
+ * SIMPLIFICADO: Loop com queries simples
  */
-router.get('/comparativo-mensal', asyncHandler(async (req: Request, res: Response) => {
+router.get('/mensal', asyncHandler(async (req: Request, res: Response) => {
   const { meses = 6 } = req.query
   const numMeses = parseInt(String(meses), 10)
   
@@ -445,178 +452,6 @@ router.get('/comparativo-mensal', asyncHandler(async (req: Request, res: Respons
   res.json({
     periodo_meses: meses,
     meses: resultado
-  })
-}))
-
-/**
- * GET /relatorios/custo-beneficio - Relatório de custo-benefício dos veículos
- */
-router.get('/custo-beneficio', asyncHandler(async (req: Request, res: Response) => {
-  const { meses = 6 } = req.query
-
-  // 1. Buscar veículos
-  const veiculos = await pool.query('SELECT id_veiculo, placa, modelo FROM veiculo')
-
-  const resultado = []
-
-  for (const veiculo of veiculos.rows) {
-    // 2. Calcular custo combustível
-    const combustivel = await pool.query(
-      `SELECT SUM(valor_total) as total 
-       FROM abastecimento 
-       WHERE id_veiculo = $1 
-       AND data_abast >= CURRENT_DATE - ($2::text || ' months')::interval`,
-      [veiculo.id_veiculo, meses]
-    )
-
-    // 3. Calcular custo manutenção
-    const manutencao = await pool.query(
-      `SELECT SUM(valor) as total 
-       FROM manutencao 
-       WHERE id_veiculo = $1 
-       AND concluida = true 
-       AND data_man >= CURRENT_DATE - ($2::text || ' months')::interval`,
-      [veiculo.id_veiculo, meses]
-    )
-
-    // 4. Calcular KM rodados
-    const km = await pool.query(
-      `SELECT SUM(km_final - km_inicial) as total 
-       FROM viagem 
-       WHERE id_veiculo = $1 
-       AND km_final IS NOT NULL 
-       AND data_saida >= CURRENT_DATE - ($2::text || ' months')::interval`,
-      [veiculo.id_veiculo, meses]
-    )
-
-    // 5. Contar viagens
-    const viagens = await pool.query(
-      `SELECT COUNT(*) as total 
-       FROM viagem 
-       WHERE id_veiculo = $1 
-       AND data_saida >= CURRENT_DATE - ($2::text || ' months')::interval`,
-      [veiculo.id_veiculo, meses]
-    )
-
-    const custoCombustivel = parseFloat(combustivel.rows[0].total || 0)
-    const custoManutencao = parseFloat(manutencao.rows[0].total || 0)
-    const custoOperacional = custoCombustivel + custoManutencao
-    const kmRodados = parseFloat(km.rows[0].total || 0)
-    const totalViagens = parseInt(viagens.rows[0].total, 10)
-
-    // Calcular métricas
-    const custoPorKm = kmRodados > 0 ? custoOperacional / kmRodados : 0
-    const taxaUtilizacao = totalViagens > 0 ? (totalViagens / (parseInt(String(meses), 10) * 30)) * 100 : 0
-
-    // Determinar eficiência
-    let eficienciaOperacional = 'Baixa'
-    if (custoPorKm > 0 && custoPorKm < 2) eficienciaOperacional = 'Alta'
-    else if (custoPorKm >= 2 && custoPorKm < 4) eficienciaOperacional = 'Média'
-
-    resultado.push({
-      ...veiculo,
-      custo_operacional: custoOperacional,
-      km_rodados: kmRodados,
-      custo_por_km: custoPorKm,
-      total_viagens: totalViagens,
-      taxa_utilizacao: taxaUtilizacao,
-      eficiencia_operacional: eficienciaOperacional
-    })
-  }
-
-  res.json({
-    periodo_meses: meses,
-    veiculos: resultado
-  })
-}))
-
-/**
- * GET /relatorios/timeline - Timeline de eventos
- */
-router.get('/timeline', asyncHandler(async (req: Request, res: Response) => {
-  const { meses = 6, limit = 100 } = req.query
-  const limitNum = parseInt(String(limit), 10)
-
-  // 1. Buscar viagens
-  const viagens = await pool.query(
-    `SELECT v.data_saida, v.km_final, v.km_inicial, ve.placa
-     FROM viagem v
-     JOIN veiculo ve ON ve.id_veiculo = v.id_veiculo
-     WHERE v.data_saida >= CURRENT_DATE - ($1::text || ' months')::interval
-     ORDER BY v.data_saida DESC
-     LIMIT $2`,
-    [meses, limitNum]
-  )
-
-  // 2. Buscar abastecimentos
-  const abastecimentos = await pool.query(
-    `SELECT a.data_abast, a.valor_total, a.litros, ve.placa
-     FROM abastecimento a
-     JOIN veiculo ve ON ve.id_veiculo = a.id_veiculo
-     WHERE a.data_abast >= CURRENT_DATE - ($1::text || ' months')::interval
-     ORDER BY a.data_abast DESC
-     LIMIT $2`,
-    [meses, limitNum]
-  )
-
-  // 3. Buscar manutenções
-  const manutencoes = await pool.query(
-    `SELECT m.data_man, m.valor, m.descricao_man, ve.placa
-     FROM manutencao m
-     JOIN veiculo ve ON ve.id_veiculo = m.id_veiculo
-     WHERE m.data_man >= CURRENT_DATE - ($1::text || ' months')::interval
-     ORDER BY m.data_man DESC
-     LIMIT $2`,
-    [meses, limitNum]
-  )
-
-  // 4. Processar eventos em JavaScript
-  const eventos: any[] = []
-
-  // Adicionar viagens
-  viagens.rows.forEach((v: any) => {
-    const kmPercorrido = v.km_final && v.km_inicial ? v.km_final - v.km_inicial : 0
-    eventos.push({
-      tipo: 'viagem',
-      data: v.data_saida,
-      descricao: kmPercorrido > 0 ? `Viagem - ${kmPercorrido} km` : 'Viagem iniciada',
-      veiculo_placa: v.placa,
-      km: kmPercorrido
-    })
-  })
-
-  // Adicionar abastecimentos
-  abastecimentos.rows.forEach((a: any) => {
-    eventos.push({
-      tipo: 'abastecimento',
-      data: a.data_abast,
-      descricao: `Abastecimento - ${parseFloat(a.litros).toFixed(1)}L`,
-      veiculo_placa: a.placa,
-      valor: parseFloat(a.valor_total)
-    })
-  })
-
-  // Adicionar manutenções
-  manutencoes.rows.forEach((m: any) => {
-    eventos.push({
-      tipo: 'manutencao',
-      data: m.data_man,
-      descricao: `Manutenção - ${m.descricao_man}`,
-      veiculo_placa: m.placa,
-      valor: parseFloat(m.valor)
-    })
-  })
-
-  // Ordenar por data (mais recente primeiro)
-  eventos.sort((a: any, b: any) => new Date(b.data).getTime() - new Date(a.data).getTime())
-
-  // Limitar resultado
-  const eventosFinal = eventos.slice(0, limitNum)
-
-  res.json({
-    periodo_meses: meses,
-    total_eventos: eventosFinal.length,
-    eventos: eventosFinal
   })
 }))
 

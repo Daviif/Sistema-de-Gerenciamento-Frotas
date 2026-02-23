@@ -4,6 +4,11 @@ import { api } from '@/lib/api'
 import { Driver, NewDriver } from '@/types'
 import { toast } from 'sonner'
 
+type DeleteDriverResponse = {
+  message: string
+  motorista?: Driver
+}
+
 const QUERY_KEYS = {
   all: ['drivers'] as const,
   detail: (cpf: string) => ['drivers', cpf] as const,
@@ -87,14 +92,41 @@ export function useDeleteDriver() {
 
   return useMutation({
     mutationFn: async (cpf: string) => {
-      await api.delete(`/motoristas/${cpf}`)
+      const { data } = await api.delete<DeleteDriverResponse>(`/motoristas/${cpf}`)
+      return data
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all })
-      toast.success('Motorista excluído com sucesso!')
+
+      if (data?.message?.toLowerCase().includes('inativado')) {
+        toast.info(data.message)
+        return
+      }
+
+      toast.success(data?.message || 'Motorista excluído com sucesso!')
     },
     onError: (error: unknown) => {
       const message = error instanceof Error ? error.message : 'Erro ao excluir motorista'
+      toast.error(message)
+    },
+  })
+}
+
+export function useReactivateDriver() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (cpf: string) => {
+      const { data } = await api.put<Driver>(`/motoristas/${cpf}`, { status: 'ativo' })
+      return data
+    },
+    onSuccess: (_, cpf) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(cpf) })
+      toast.success('Motorista reativado com sucesso!')
+    },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Erro ao reativar motorista'
       toast.error(message)
     },
   })
