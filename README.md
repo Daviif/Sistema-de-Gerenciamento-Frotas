@@ -3,52 +3,112 @@ Esse é um sistema de Gerenciamento de Frotas, em desenvolvimento para um trabal
 
 Desenvolvimento: Davi Emílio de Paula Fonseca - Matrícula 24.1.8158<br>
 
-O Sistema de Gerenciamento de Frota de Veículos tem como finalidade auxiliar empresas ou instituições no controle de seus veículos, motoristas, manutenções, abastecimentos e deslocamentos. O sistema permitirá:<br>
-  1. Cadastro e consulta de veículos <br>
-  2. Cadastro de motoristas<br>
-  3. Registro de manutenções<br>
-  4. Controle de abastecimentos<br>
-  5. Registro de viagens/uso dos veículos<br>
+O Sistema de Gerenciamento de Frota de Veículos tem como finalidade auxiliar empresas ou instituições no controle operacional e analítico da frota. Atualmente, o sistema permite:
 
-As regras de negócio utilizadas para esse sistema foram:
-  1. O sistema deve permitir o cadastro de veículos contendo:<br>
-    Placa<br>
-    Modelo<br>
-    Marca<br>
-    Ano<br>
-    Tipo (carro, moto, caminhão, etc.)<br>
-    Status (ativo, em manutenção, inativo)<br>
+1. Cadastro e consulta de veículos
+2. Cadastro e consulta de motoristas
+3. Registro e acompanhamento de manutenções
+4. Controle de abastecimentos
+5. Registro de viagens com criação, finalização e cancelamento
+6. Cadastro e gestão de cidades (origem/destino)
+7. Dashboard com indicadores da operação
+8. Estatísticas gerais e relatórios gerenciais
 
-  2. O sistema deve permitir o cadastro de motoristas, contendo:<br>
-    Nome<br>
-    CPF<br>
-    CNH<br>
-    Categoria da CNH<br>
-    Validade da CNH<br>
-    
-  3. O sistema deve permitir o registro de manutenções, informando:<br>
-    Veículo<br>
-    Data<br>
-    Tipo de manutenção<br>
-    Descrição<br>
-    Valor gasto<br>
-  4. O sistema deve permitir o registro de abastecimentos, informando:<br>
-    Veículo<br>
-    Data<br>
-    Tipo de combustível<br>
-    Quantidade de litros<br>
-    Valor total<br>
-  5. O sistema deve permitir o registro de viagens, contendo:<br>
-    Veículo utilizado<br>
-    Motorista responsável<br>
-    Data de saída e retorno<br>
-    Quilometragem inicial e final<br>
-    Destino<br>
-  6. O sistema deve permitir consultas, tais como:<br>
-    Histórico de manutenções de um veículo<br>
-    Total gasto com abastecimento por veículoViagens realizadas por um motorista<br>
-    Veículos disponíveis (status ativo)<br>
+## Regras de negócio implementadas
 
-Viagens realizadas por um motorista
+1. O sistema permite o cadastro e gestão de veículos contendo:
+   - Placa (com validação)
+   - Modelo
+   - Marca
+   - Ano
+   - Tipo
+   - Quilometragem atual
+   - Capacidade do tanque
+   - Status (ativo, em_viagem, manutencao, inativo)
 
-Veículos disponíveis (status ativo)
+2. O sistema permite o cadastro e gestão de motoristas contendo:
+   - Nome
+   - CPF (com validação)
+   - CNH (com validação)
+   - Categoria da CNH
+   - Validade da CNH
+   - Status
+
+3. O sistema permite o registro de manutenções com:
+   - Veículo
+   - Data
+   - Tipo de manutenção
+   - Descrição
+   - Valor
+   - Quilometragem da manutenção (opcional)
+   - Fornecedor (opcional)
+   - Controle de conclusão
+
+4. O sistema permite o registro de abastecimentos com:
+   - Veículo
+   - Data
+   - Tipo de combustível
+   - Litros
+   - Valor total
+   - Quilometragem no abastecimento (opcional)
+
+5. O sistema permite o registro e ciclo de vida de viagens contendo:
+   - Veículo utilizado
+   - Motorista responsável
+   - Cidade de origem e destino
+   - Data de saída e chegada
+   - Quilometragem inicial e final
+   - Observações
+   - Status da viagem (em_andamento, finalizada, cancelada)
+
+6. O sistema permite consultas e análises como:
+   - Histórico completo do veículo (viagens, abastecimentos e manutenções)
+   - Histórico de viagens por motorista
+   - Motoristas disponíveis (status ativo e CNH válida)
+   - Veículos disponíveis e por status
+   - Rotas mais populares
+   - Estatísticas por período (custos, km, viagens)
+
+## Stack utilizada
+
+- Backend: Node.js + Express + TypeScript + PostgreSQL
+- Frontend: React + Vite + TypeScript + React Query + Tailwind CSS
+
+## Estrutura do projeto
+
+- `backend/`: API REST, regras de negócio e acesso ao banco
+- `frontend/`: interface web com dashboard, cadastros e relatórios
+
+## Como executar
+
+### 1) Backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+Servidor padrão: `http://localhost:3001`
+
+### 2) Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Aplicação padrão: `http://localhost:5173`
+
+## Configuração do banco de dados
+
+- O backend usa PostgreSQL.
+- A conexão está definida em `backend/src/db.ts`.
+- Ajuste usuário, senha, host, porta e nome do banco conforme seu ambiente.
+
+## Documentação da API
+
+Para detalhes dos endpoints e exemplos de payloads, consulte:
+
+- `backend/API_DOCS.md`

@@ -36,7 +36,6 @@ export default function RelatorioMotoristas({ meses }: Props) {
 
   // Separar motoristas com CNH vencida ou a vencer
   const cnhCritica = motoristas.filter(m => m.cnh_vencida || m.dias_para_vencer_cnh <= 90)
-  const cnhOk = motoristas.filter(m => !m.cnh_vencida && m.dias_para_vencer_cnh > 90)
 
   return (
     <div className="space-y-6">
@@ -104,7 +103,7 @@ export default function RelatorioMotoristas({ meses }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cnhOk.map((motorista) => (
+                {motoristas.map((motorista) => (
                   <TableRow key={motorista.cpf}>
                     <TableCell>
                       <div>
@@ -132,10 +131,16 @@ export default function RelatorioMotoristas({ meses }: Props) {
                     <TableCell className="text-center">{motorista.veiculos_diferentes}</TableCell>
                     <TableCell className="text-center">{motorista.rotas_diferentes}</TableCell>
                     <TableCell className="text-center">
-                      <Badge className="status-success">
-                        <CheckCircle className="w-3 h-3" />
-                        OK
-                      </Badge>
+                      {motorista.cnh_vencida ? (
+                        <Badge variant="destructive">Vencida</Badge>
+                      ) : motorista.dias_para_vencer_cnh <= 90 ? (
+                        <Badge className="status-warning">A vencer</Badge>
+                      ) : (
+                        <Badge className="status-success">
+                          <CheckCircle className="w-3 h-3" />
+                          OK
+                        </Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

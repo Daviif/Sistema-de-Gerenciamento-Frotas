@@ -88,3 +88,23 @@ export function useDeleteVehicle() {
     },
   })
 }
+
+export function useReactivateVehicle() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await api.put<Vehicle>(`/veiculos/${id}`, { status: 'ativo' })
+      return data
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(id) })
+      toast.success('Veículo reativado com sucesso!')
+    },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Erro ao reativar veículo'
+      toast.error(message)
+    },
+  })
+}

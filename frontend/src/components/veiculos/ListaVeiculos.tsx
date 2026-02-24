@@ -1,6 +1,6 @@
 // src/components/veiculos/ListaVeiculos.tsx
 import { useState } from 'react'
-import { Plus, Search, Trash2 } from 'lucide-react'
+import { Plus, Power, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import VeiculosForm from './VeiculosForm'
 import DetalhesVeiculos from './DetalhesVeiculos'
 import Loading from '@/components/ui/loading'
-import { useVehicles, useDeleteVehicle } from '@/hooks/useVeiculos'
+import { useVehicles, useDeleteVehicle, useReactivateVehicle } from '@/hooks/useVeiculos'
 import { 
   Select,
   SelectContent,
@@ -29,6 +29,7 @@ export default function VehiclesList() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const { data: vehicles, isLoading } = useVehicles(statusFilter)
   const deleteVehicle = useDeleteVehicle()
+  const reactivateVehicle = useReactivateVehicle()
 
   function toggleSelect(id: number) {
     setSelectedIds((prev) => {
@@ -55,6 +56,14 @@ export default function VehiclesList() {
     }
     setSelectedIds(new Set())
     setDeleteConfirmOpen(false)
+  }
+
+  async function handleReactivate(id: number) {
+    try {
+      await reactivateVehicle.mutateAsync(id)
+    } catch {
+      // toast no hook
+    }
   }
 
   const q = searchTerm.toLowerCase()
@@ -212,6 +221,19 @@ export default function VehiclesList() {
                 Editar
               </Button>
             </div>
+
+            {vehicle.status === VehicleStatus.INACTIVE && (
+              <Button
+                type="button"
+                size="sm"
+                className="w-full mt-2"
+                disabled={reactivateVehicle.isPending}
+                onClick={() => handleReactivate(vehicle.id_veiculo)}
+              >
+                <Power className="w-4 h-4" aria-hidden="true" />
+                Ativar novamente
+              </Button>
+            )}
           </Card>
         ))}
       </div>

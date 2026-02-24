@@ -93,8 +93,6 @@ export default function RelatorioManutencao({ meses }: Props) {
                   <TableHead className="text-center">Preventivas</TableHead>
                   <TableHead className="text-center">Corretivas</TableHead>
                   <TableHead className="text-right">Custo Total</TableHead>
-                  <TableHead className="text-right">Dias Última</TableHead>
-                  <TableHead className="text-right">KM Última</TableHead>
                   <TableHead className="text-center">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -111,8 +109,6 @@ export default function RelatorioManutencao({ meses }: Props) {
                     <TableCell className="text-center text-primary">{veiculo.manutencoes_preventivas}</TableCell>
                     <TableCell className="text-center text-danger">{veiculo.manutencoes_corretivas}</TableCell>
                     <TableCell className="text-right">{formatCurrency(veiculo.custo_total)}</TableCell>
-                    <TableCell className="text-right">{veiculo.dias_desde_ultima}</TableCell>
-                    <TableCell className="text-right">{veiculo.km_desde_ultima !== undefined && veiculo.km_desde_ultima !== null ? `${veiculo.km_desde_ultima.toLocaleString('pt-BR')} km` : '-'}</TableCell>
                     <TableCell className="text-center">
                       <Badge className={getStatusColor(veiculo.status_alerta)}>
                         {veiculo.status_alerta === 'critico' ? 'Crítico' : veiculo.status_alerta === 'atencao' ? 'Atenção' : 'OK'}

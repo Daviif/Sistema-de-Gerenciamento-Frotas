@@ -1,6 +1,6 @@
 // src/components/relatorios/RelatoriosView.tsx
 import { useState } from 'react'
-import { FileText, TrendingUp, Users, Fuel, Wrench, Route, DollarSign, Clock, BarChart3 } from 'lucide-react'
+import { FileText, TrendingUp, Users, Fuel, Wrench, DollarSign, Clock, BarChart3 } from 'lucide-react'
 import { Card   } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import RelatorioOverview from './RelatorioOverview'
@@ -8,7 +8,6 @@ import RelatorioFrota from './RelatorioFrota'
 import RelatorioMotoristas from './RelatorioMotoristas'
 import RelatorioEficienciaCombustivel from './RelatorioEficienciaCombustivel'
 import RelatorioManutencao from './RelatorioManutencao'
-import RelatorioRotas from './RelatorioRotas'
 import RelatorioCustoBeneficio from './RelatorioCustoBeneficio'
 import RelatorioTimeline from './RelatorioTimeline'
 import RelatorioComparativo from './RelatorioComparativo'
@@ -19,7 +18,6 @@ type RelatorioTab =
   | 'motoristas'
   | 'combustivel'
   | 'manutencao'
-  | 'rotas'
   | 'custo-beneficio'
   | 'timeline'
   | 'comparativo'
@@ -63,12 +61,6 @@ const TABS: TabConfig[] = [
     description: 'Alertas de manutenção'
   },
   {
-    id: 'rotas',
-    label: 'Rotas',
-    icon: Route,
-    description: 'Análise de rotas'
-  },
-  {
     id: 'custo-beneficio',
     label: 'Custo-Benefício',
     icon: DollarSign,
@@ -104,8 +96,6 @@ export default function RelatoriosView() {
         return <RelatorioEficienciaCombustivel meses={periodoMeses} />
       case 'manutencao':
         return <RelatorioManutencao meses={periodoMeses} />
-      case 'rotas':
-        return <RelatorioRotas meses={periodoMeses} />
       case 'custo-beneficio':
         return <RelatorioCustoBeneficio meses={periodoMeses} />
       case 'timeline':
